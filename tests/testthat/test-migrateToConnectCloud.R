@@ -505,3 +505,137 @@ test_that("migrateToConnectCloud() errors with guidance when the name can't be d
     "Could not derive an application name"
   )
 })
+
+test_that("migrateToConnectCloud() derives the record name from the directory when the content has no title", {
+  root <- withr::local_tempdir()
+  appDir <- file.path(root, "coolapp")
+  dir.create(appDir)
+
+  local_mocked_bindings(
+    accounts = function(...) {
+      data.frame(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        stringsAsFactors = FALSE
+      )
+    },
+    findAccountInfo = function(...) {
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
+    },
+    clientForAccount = function(...) {
+      list(
+        getContent = function(id) {
+          list(id = id, title = "", account_id = "acct-1", state = "active")
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
+    }
+  )
+
+  newPath <- migrateToConnectCloud(appDir, contentId = "abc123")
+
+  rec <- as.list(as.data.frame(read.dcf(newPath)))
+  expect_equal(rec$name, "coolapp")
+})
+
+test_that("migrateToConnectCloud() reconstructs a record with empty envVars when there is no source", {
+  appDir <- withr::local_tempdir()
+
+  local_mocked_bindings(
+    accounts = function(...) {
+      data.frame(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        stringsAsFactors = FALSE
+      )
+    },
+    findAccountInfo = function(...) {
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
+    },
+    clientForAccount = function(...) {
+      list(
+        getContent = function(id) {
+          list(
+            id = id,
+            title = "My App",
+            account_id = "acct-1",
+            state = "active"
+          )
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
+    }
+  )
+
+  newPath <- migrateToConnectCloud(
+    appDir,
+    contentId = "abc123",
+    appName = "myapp"
+  )
+
+  # No source record means no envVars to carry over; deploymentRecord() writes
+  # NA, which read.dcf() surfaces as absent or "NA".
+  rec <- as.list(as.data.frame(read.dcf(newPath)))
+  expect_true(is.null(rec$envVars) || rec$envVars %in% c("", "NA"))
+})
+
+test_that("migrateToConnectCloud() aborts when the target content is missing (no source record)", {
+  appDir <- withr::local_tempdir()
+
+  local_mocked_bindings(
+    accounts = function(...) {
+      data.frame(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        stringsAsFactors = FALSE
+      )
+    },
+    findAccountInfo = function(...) {
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
+    },
+    clientForAccount = function(...) {
+      list(
+        getContent = function(id) {
+          cli::cli_abort(
+            "Content is pending deletion.",
+            class = c("rsconnect_http_404", "rsconnect_http")
+          )
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
+    }
+  )
+
+  expect_error(
+    migrateToConnectCloud(
+      appDir,
+      contentId = "abc123",
+      appName = "myapp"
+    ),
+    "pending deletion"
+  )
+})
+
+test_that("migrateToConnectCloud() requires a string contentId", {
+  appDir <- withr::local_tempdir()
+  expect_error(migrateToConnectCloud(appDir))
+  expect_error(migrateToConnectCloud(appDir, contentId = 123))
+})
