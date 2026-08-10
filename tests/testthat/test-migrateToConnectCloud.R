@@ -380,12 +380,21 @@ test_that("migrateToConnectCloud() reconstructs a record from contentId when no 
       )
     },
     findAccountInfo = function(...) {
-      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
     },
     clientForAccount = function(...) {
       list(
         getContent = function(id) {
-          list(id = id, title = "My App", account_id = "acct-1", state = "active")
+          list(
+            id = id,
+            title = "My App",
+            account_id = "acct-1",
+            state = "active"
+          )
         },
         getAccounts = function() {
           list(data = list(list(id = "acct-1", name = "cc-account")))
@@ -422,12 +431,21 @@ test_that("migrateToConnectCloud() derives the record name from the content titl
       )
     },
     findAccountInfo = function(...) {
-      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
     },
     clientForAccount = function(...) {
       list(
         getContent = function(id) {
-          list(id = id, title = "My Great App", account_id = "acct-1", state = "active")
+          list(
+            id = id,
+            title = "My Great App",
+            account_id = "acct-1",
+            state = "active"
+          )
         },
         getAccounts = function() {
           list(data = list(list(id = "acct-1", name = "cc-account")))
@@ -460,7 +478,11 @@ test_that("migrateToConnectCloud() errors with guidance when the name can't be d
       )
     },
     findAccountInfo = function(...) {
-      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
+      list(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        accessToken = "tok"
+      )
     },
     clientForAccount = function(...) {
       list(
@@ -475,7 +497,11 @@ test_that("migrateToConnectCloud() errors with guidance when the name can't be d
   )
 
   expect_error(
-    migrateToConnectCloud(appDir, contentId = "abc123", cloudAccount = "cc-account"),
+    migrateToConnectCloud(
+      appDir,
+      contentId = "abc123",
+      cloudAccount = "cc-account"
+    ),
     "Could not derive an application name"
   )
 })

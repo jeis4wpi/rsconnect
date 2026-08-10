@@ -383,7 +383,9 @@ migrateToConnectCloud <- function(
     NULL
   }
 
-  if (!is.null(sourceRecord) && isPositConnectCloudServer(sourceRecord$server)) {
+  if (
+    !is.null(sourceRecord) && isPositConnectCloudServer(sourceRecord$server)
+  ) {
     cli::cli_abort(
       "The selected deployment already targets Connect Cloud. Nothing to migrate."
     )
