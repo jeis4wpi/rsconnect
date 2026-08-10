@@ -331,6 +331,12 @@ forgetDeployment <- function(
 #' server. The target content must already exist in Connect Cloud — this
 #' function updates only the local `.dcf` file on disk.
 #'
+#' The source deployment record is optional. When `appPath` has no local
+#' record (for example, the `rsconnect/` directory was never checked in or has
+#' been lost), the Connect Cloud record is reconstructed from `contentId`
+#' alone. In that case the record name is taken from `appName`, or derived from
+#' the content's title when `appName` is not supplied.
+#'
 #' Supported servers: all (source) -> Posit Connect Cloud (target)
 #'
 #' @param appPath Path to the content directory. Defaults to the current
@@ -342,6 +348,8 @@ forgetDeployment <- function(
 #'   registered, it is used automatically.
 #' @param appName,account,server Filters to disambiguate the source
 #'   deployment record when `appPath` has records for multiple deployments.
+#'   When no source record exists, `appName` names the reconstructed record;
+#'   if omitted, the name is derived from the content title.
 #'
 #' @return The path to the new deployment record file, invisibly.
 #' @export
@@ -359,7 +367,9 @@ migrateToConnectCloud <- function(
   ensureConnectCloudAccount()
   ccInfo <- findAccountInfo(cloudAccount, "connect.posit.cloud")
 
-  # Resolve and validate the source deployment record before touching the network.
+  # Resolve the source deployment record if one exists. It is optional: when
+  # the local record has been lost, the Connect Cloud record is reconstructed
+  # from the content alone.
   sourceDeps <- deployments(
     appPath,
     nameFilter = appName,
@@ -367,47 +377,32 @@ migrateToConnectCloud <- function(
     serverFilter = server,
     excludeOrphaned = FALSE
   )
-  if (nrow(sourceDeps) == 0) {
-    cli::cli_abort(
-      c(
-        "No deployment records found for {.path {appPath}}.",
-        i = "Deploy the app first, then call {.fun migrateToConnectCloud}."
-      )
-    )
+  sourceRecord <- if (nrow(sourceDeps) > 0) {
+    disambiguateDeployments(sourceDeps)
+  } else {
+    NULL
   }
-  sourceRecord <- disambiguateDeployments(sourceDeps)
 
-  if (isPositConnectCloudServer(sourceRecord$server)) {
+  if (!is.null(sourceRecord) && isPositConnectCloudServer(sourceRecord$server)) {
     cli::cli_abort(
       "The selected deployment already targets Connect Cloud. Nothing to migrate."
     )
   }
 
-  # Check for a collision at the target path before doing any Connect Cloud
-  # API work -- the path only depends on the source record and ccInfo, not
-  # on the content being migrated.
-  newPath <- deploymentConfigFile(
-    appPath,
-    sourceRecord$name,
-    ccInfo$name,
-    "connect.posit.cloud"
-  )
-
-  if (file.exists(newPath)) {
-    idx <- cli_menu(
-      "A Connect Cloud deployment record already exists at {.path {newPath}}.",
-      "What do you want to do?",
-      choices = c(
-        "Overwrite the existing record",
-        "Abort"
-      ),
-      not_interactive = c(
-        i = "Remove the existing record, or pass a different {.arg appName}/{.arg cloudAccount}, then retry."
-      )
+  # The record name comes from the source record when we have one, otherwise
+  # from `appName`. Both are known without a network call, so we can check for
+  # a target-path collision before doing any Connect Cloud API work. Without
+  # either, the name is derived from the content title after it is fetched.
+  recordName <- if (!is.null(sourceRecord)) sourceRecord$name else appName
+  newPath <- NULL
+  if (!is.null(recordName)) {
+    newPath <- deploymentConfigFile(
+      appPath,
+      recordName,
+      ccInfo$name,
+      "connect.posit.cloud"
     )
-    if (idx != 1L) {
-      cli::cli_abort("Migration cancelled.", call = NULL)
-    }
+    confirmMigrationOverwrite(newPath)
   }
 
   # Verify the target content exists and collect its metadata.
@@ -427,9 +422,34 @@ migrateToConnectCloud <- function(
     contentId
   )
 
+  # No source record and no `appName`: derive the record name from the content
+  # title (Connect Cloud content has no server-side name to reuse), then check
+  # for a collision as above.
+  if (is.null(recordName)) {
+    recordName <- tryCatch(
+      generateAppName(content$title, appPath, ccInfo$name, unique = FALSE),
+      error = function(e) {
+        cli::cli_abort(
+          c(
+            "Could not derive an application name from the content title.",
+            i = "Pass an {.arg appName} to name the migrated deployment record."
+          ),
+          parent = e
+        )
+      }
+    )
+    newPath <- deploymentConfigFile(
+      appPath,
+      recordName,
+      ccInfo$name,
+      "connect.posit.cloud"
+    )
+    confirmMigrationOverwrite(newPath)
+  }
+
   # Build and write the new Connect Cloud record.
   newRecord <- deploymentRecord(
-    name = sourceRecord$name,
+    name = recordName,
     title = content$title %||% sourceRecord$title,
     username = ccInfo$name,
     account = ccInfo$name,
@@ -438,13 +458,13 @@ migrateToConnectCloud <- function(
     appId = contentId,
     bundleId = NULL, # Connect Cloud does not use bundle IDs
     url = contentUrl,
-    envVars = sourceRecord$envVars[[1L]]
+    envVars = if (!is.null(sourceRecord)) sourceRecord$envVars[[1L]] else NULL
   )
 
   writeDeploymentRecord(newRecord, newPath)
 
-  # Remove the superseded source record.
-  if (unlink(sourceRecord$deploymentFile) != 0L) {
+  # Remove the superseded source record, when there was one.
+  if (!is.null(sourceRecord) && unlink(sourceRecord$deploymentFile) != 0L) {
     cli::cli_abort(
       c(
         "Failed to remove source deployment record {.path {sourceRecord$deploymentFile}}.",
@@ -457,6 +477,29 @@ migrateToConnectCloud <- function(
     "Migration complete: next deploy of {.path {appPath}} targets Connect Cloud content {.val {contentId}}."
   )
   invisible(newPath)
+}
+
+# Internal: prompt to overwrite (or abort) when a Connect Cloud record already
+# exists at the target path. A no-op when the path is free.
+confirmMigrationOverwrite <- function(newPath) {
+  if (!file.exists(newPath)) {
+    return(invisible())
+  }
+  idx <- cli_menu(
+    "A Connect Cloud deployment record already exists at {.path {newPath}}.",
+    "What do you want to do?",
+    choices = c(
+      "Overwrite the existing record",
+      "Abort"
+    ),
+    not_interactive = c(
+      i = "Remove the existing record, or pass a different {.arg appName}/{.arg cloudAccount}, then retry."
+    )
+  )
+  if (idx != 1L) {
+    cli::cli_abort("Migration cancelled.", call = NULL)
+  }
+  invisible()
 }
 
 # Internal: abort or prompt to register a Connect Cloud account when none exists.

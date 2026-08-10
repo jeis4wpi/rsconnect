@@ -366,7 +366,9 @@ test_that("migrateToConnectCloud() aborts when source record cannot be deleted",
   )
 })
 
-test_that("migrateToConnectCloud() aborts with no deployment records", {
+test_that("migrateToConnectCloud() reconstructs a record from contentId when no source exists (appName supplied)", {
+  # Lost rsconnect directory: no source record on disk, but the content is
+  # already on Connect Cloud. The record is rebuilt from contentId + appName.
   appDir <- withr::local_tempdir()
 
   local_mocked_bindings(
@@ -378,21 +380,102 @@ test_that("migrateToConnectCloud() aborts with no deployment records", {
       )
     },
     findAccountInfo = function(...) {
-      list(
-        name = "cc-account",
-        server = "connect.posit.cloud",
-        accessToken = "tok"
-      )
+      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
     },
     clientForAccount = function(...) {
-      list(getContent = function(id) {
-        list(id = id, title = "", url = "", state = "active")
-      })
+      list(
+        getContent = function(id) {
+          list(id = id, title = "My App", account_id = "acct-1", state = "active")
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
+    }
+  )
+
+  newPath <- migrateToConnectCloud(
+    appDir,
+    contentId = "abc123",
+    cloudAccount = "cc-account",
+    appName = "myapp"
+  )
+
+  expect_true(file.exists(newPath))
+  rec <- as.list(as.data.frame(read.dcf(newPath)))
+  expect_equal(rec$server, "connect.posit.cloud")
+  expect_equal(rec$appId, "abc123")
+  expect_equal(rec$name, "myapp")
+  expect_equal(rec$title, "My App")
+  expect_equal(rec$url, "https://connect.posit.cloud/cc-account/content/abc123")
+})
+
+test_that("migrateToConnectCloud() derives the record name from the content title when no source and no appName", {
+  appDir <- withr::local_tempdir()
+
+  local_mocked_bindings(
+    accounts = function(...) {
+      data.frame(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        stringsAsFactors = FALSE
+      )
+    },
+    findAccountInfo = function(...) {
+      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
+    },
+    clientForAccount = function(...) {
+      list(
+        getContent = function(id) {
+          list(id = id, title = "My Great App", account_id = "acct-1", state = "active")
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
+    }
+  )
+
+  newPath <- migrateToConnectCloud(appDir, contentId = "abc123")
+
+  rec <- as.list(as.data.frame(read.dcf(newPath)))
+  # generateAppName() munges "My Great App" -> "my_great_app".
+  expect_equal(rec$name, "my_great_app")
+  expect_equal(rec$appId, "abc123")
+})
+
+test_that("migrateToConnectCloud() errors with guidance when the name can't be derived", {
+  # Empty content title and a directory whose basename ("a") is too short to
+  # form a valid app name -- the caller must supply appName.
+  root <- withr::local_tempdir()
+  appDir <- file.path(root, "a")
+  dir.create(appDir)
+
+  local_mocked_bindings(
+    accounts = function(...) {
+      data.frame(
+        name = "cc-account",
+        server = "connect.posit.cloud",
+        stringsAsFactors = FALSE
+      )
+    },
+    findAccountInfo = function(...) {
+      list(name = "cc-account", server = "connect.posit.cloud", accessToken = "tok")
+    },
+    clientForAccount = function(...) {
+      list(
+        getContent = function(id) {
+          list(id = id, title = "", account_id = "acct-1", state = "active")
+        },
+        getAccounts = function() {
+          list(data = list(list(id = "acct-1", name = "cc-account")))
+        }
+      )
     }
   )
 
   expect_error(
-    migrateToConnectCloud(appDir, contentId = "abc123"),
-    "No deployment records found"
+    migrateToConnectCloud(appDir, contentId = "abc123", cloudAccount = "cc-account"),
+    "Could not derive an application name"
   )
 })
