@@ -362,6 +362,7 @@ migrateToConnectCloud <- function(
   server = NULL
 ) {
   check_string(contentId)
+  check_string(appName, allow_empty = FALSE, allow_null = TRUE)
 
   # Ensure a Connect Cloud account exists; prompt to register one if not.
   ensureConnectCloudAccount()
@@ -370,17 +371,35 @@ migrateToConnectCloud <- function(
   # Resolve the source deployment record if one exists. It is optional: when
   # the local record has been lost, the Connect Cloud record is reconstructed
   # from the content alone.
+  #
+  # `appName` is not applied as a filter here: it doubles as the name for a
+  # reconstructed record, so filtering by it could hide an existing record and
+  # silently leave it behind. `account`/`server` are genuine source selectors
+  # and still apply. When records exist, `appName` disambiguates among them --
+  # and a value that matches none is an error, not a silent reconstruction.
   sourceDeps <- deployments(
     appPath,
-    nameFilter = appName,
     accountFilter = account,
     serverFilter = server,
     excludeOrphaned = FALSE
   )
-  sourceRecord <- if (nrow(sourceDeps) > 0) {
-    disambiguateDeployments(sourceDeps)
+  if (nrow(sourceDeps) == 0) {
+    sourceRecord <- NULL
   } else {
-    NULL
+    if (!is.null(appName)) {
+      matched <- sourceDeps[sourceDeps$name == appName, , drop = FALSE]
+      if (nrow(matched) == 0) {
+        cli::cli_abort(
+          c(
+            "No deployment record named {.val {appName}} for {.path {appPath}}.",
+            i = "Existing record{?s}: {.val {sourceDeps$name}}.",
+            i = "Omit {.arg appName} to migrate an existing record, or remove the old record first."
+          )
+        )
+      }
+      sourceDeps <- matched
+    }
+    sourceRecord <- disambiguateDeployments(sourceDeps)
   }
 
   if (
