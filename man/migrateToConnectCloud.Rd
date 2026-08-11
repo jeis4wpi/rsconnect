@@ -25,7 +25,9 @@ new record under. When \code{NULL} and exactly one Connect Cloud account is
 registered, it is used automatically.}
 
 \item{appName, account, server}{Filters to disambiguate the source
-deployment record when \code{appPath} has records for multiple deployments.}
+deployment record when \code{appPath} has records for multiple deployments.
+When no source record exists, \code{appName} names the reconstructed record;
+if omitted, the name is derived from the content title.}
 }
 \value{
 The path to the new deployment record file, invisibly.
@@ -38,5 +40,11 @@ server. The target content must already exist in Connect Cloud — this
 function updates only the local \code{.dcf} file on disk.
 }
 \details{
+The source deployment record is optional. When \code{appPath} has no local
+record (for example, the \verb{rsconnect/} directory was never checked in or has
+been lost), the Connect Cloud record is reconstructed from \code{contentId}
+alone. In that case the record name is taken from \code{appName}, or derived from
+the content's title when \code{appName} is not supplied.
+
 Supported servers: all (source) -> Posit Connect Cloud (target)
 }
