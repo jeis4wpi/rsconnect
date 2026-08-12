@@ -43,16 +43,42 @@ applications <- function(account = NULL, server = NULL) {
   serverDetails <- serverInfo(accountDetails$server)
   client <- clientForAccount(accountDetails)
 
-  if (isPositConnectCloudServer(accountDetails$server)) {
-    cli::cli_abort(
-      "The applications() function is not supported for Posit Connect Cloud accounts."
-    )
-  }
-
   isConnect <- isConnectServer(accountDetails$server)
+  isPCC <- isPositConnectCloudServer(accountDetails$server)
 
   # retrieve applications
   apps <- client$listApplications(accountDetails$accountId)
+
+  if (isPCC) {
+    empty <- data.frame(
+      id = character(), name = character(), title = character(),
+      url = character(), status = character(), size = character(),
+      instances = integer(), config_url = character(),
+      created_time = character(), updated_time = character(),
+      guid = character(),
+      stringsAsFactors = FALSE
+    )
+    if (length(apps) == 0) return(empty)
+    res <- lapply(apps, function(x) {
+      data.frame(
+        id = x$id,
+        name = x$title,
+        title = x$title,
+        url = x$current_revision$url %||% NA_character_,
+        status = NA_character_,
+        size = NA_character_,
+        instances = NA_integer_,
+        config_url = paste0(
+          connectCloudUrls()$ui, "/", accountDetails$name, "/content/", x$id
+        ),
+        created_time = x$created_time %||% NA_character_,
+        updated_time = x$updated_time %||% NA_character_,
+        guid = NA_character_,
+        stringsAsFactors = FALSE
+      )
+    })
+    return(do.call("rbind", res))
+  }
 
   # extract the subset of fields we're interested in
   keep <- if (isConnect) {

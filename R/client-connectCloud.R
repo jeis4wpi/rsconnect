@@ -168,8 +168,24 @@ connectCloudClient <- function(service, authInfo) {
     withTokenRefreshRetry = withTokenRefreshRetry,
 
     listApplications = function(accountId, filters = list()) {
-      # TODO: call the real API when available (api doesn't support filtering by name yet)
-      return(list())
+      pageSize <- 100
+      offset <- 0
+      allItems <- list()
+      repeat {
+        path <- paste0(
+          "/contents?account_id=", accountId,
+          "&include_total=true&limit=", pageSize,
+          "&offset=", offset
+        )
+        response <- withTokenRefreshRetry(GET, path)
+        allItems <- c(allItems, response$data)
+        offset <- offset + length(response$data)
+        if (length(response$data) == 0 || isTRUE(offset >= as.numeric(response$total))) {
+          break
+        }
+      }
+      # Set name = title so resolveApplication (which matches on app$name) works for PCC.
+      lapply(allItems, function(item) { item$name <- item$title; item })
     },
 
     createContent = function(
