@@ -185,7 +185,12 @@ connectCloudClient <- function(service, authInfo) {
         }
       }
       # Set name = title so resolveApplication (which matches on app$name) works for PCC.
-      lapply(allItems, function(item) { item$name <- item$title; item })
+      items <- lapply(allItems, function(item) { item$name <- item$title; item })
+      # Honor filters$name with exact-match semantics (mirrors shinyapps.io contract).
+      if (!is.null(filters$name)) {
+        items <- Filter(function(item) identical(item$name, filters$name), items)
+      }
+      items
     },
 
     createContent = function(

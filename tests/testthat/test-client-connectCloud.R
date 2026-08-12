@@ -553,3 +553,88 @@ test_that("withTokenRefreshRetry uses client_credentials when clientSecret is se
   expect_equal(call_count, 2)
   expect_true(register_called)
 })
+
+test_that("listApplications() paginates through multiple pages", {
+  skip_if_not_installed("webfakes")
+
+  allContents <- list(
+    list(id = "c1", title = "app-one"),
+    list(id = "c2", title = "app-two"),
+    list(id = "c3", title = "app-three")
+  )
+
+  contents_app <- webfakes::new_app()
+  contents_app$use(webfakes::mw_json())
+  # Serve at most 2 items per page regardless of the client's limit param,
+  # forcing two GET /contents requests to accumulate all 3 items.
+  contents_app$get("/contents", function(req, res) {
+    offset <- as.integer(req$query$offset)
+    remaining <- allContents[seq(offset + 1L, length(allContents))]
+    page <- remaining[seq_len(min(2L, length(remaining)))]
+    res$set_status(200L)$send_json(
+      list(data = page, total = length(allContents)),
+      auto_unbox = TRUE
+    )
+  })
+  app <- webfakes::new_app_process(contents_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "acct-1",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$listApplications("acct-1")
+  expect_equal(length(result), 3L)
+  expect_equal(
+    vapply(result, function(x) x$id, character(1)),
+    c("c1", "c2", "c3")
+  )
+  # name must be derived from title
+  expect_equal(
+    vapply(result, function(x) x$name, character(1)),
+    c("app-one", "app-two", "app-three")
+  )
+})
+
+test_that("listApplications() filters by exact name, not substring", {
+  skip_if_not_installed("webfakes")
+
+  allContents <- list(
+    list(id = "c1", title = "my-app"),
+    list(id = "c2", title = "my-app-extra"),
+    list(id = "c3", title = "other-app")
+  )
+
+  contents_app <- webfakes::new_app()
+  contents_app$use(webfakes::mw_json())
+  contents_app$get("/contents", function(req, res) {
+    res$set_status(200L)$send_json(
+      list(data = allContents, total = length(allContents)),
+      auto_unbox = TRUE
+    )
+  })
+  app <- webfakes::new_app_process(contents_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "acct-1",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  # "my-app-extra" shares a prefix with "my-app"; exact match must exclude it.
+  result <- client$listApplications("acct-1", filters = list(name = "my-app"))
+  expect_equal(length(result), 1L)
+  expect_equal(result[[1]]$id, "c1")
+  expect_equal(result[[1]]$name, "my-app")
+})
