@@ -87,9 +87,11 @@ addAuthorizedUser <- function(
 #' Remove authorized user from an application
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' Remove authorized user from an application
 #'
-#' Supported servers: ShinyApps servers
+#' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param user The user to remove. Can be id or email address.
 #' @param appDir Directory containing application. Defaults to
@@ -97,7 +99,7 @@ addAuthorizedUser <- function(
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showUsers()]
-#' @note This function works only for ShinyApps servers.
+#' @note This function works for ShinyApps and Posit Connect Cloud.
 #' @export
 removeAuthorizedUser <- function(
   user,
@@ -106,8 +108,18 @@ removeAuthorizedUser <- function(
   account = NULL,
   server = NULL
 ) {
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "removeAuthorizedUser()",
+    details = paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<https://connect.posit.cloud>."
+    )
+  )
   accountDetails <- accountInfo(account, server)
-  checkShinyappsServer(accountDetails$server)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    checkShinyappsServer(accountDetails$server)
+  }
 
   # resolve application
   if (is.null(appName)) {
@@ -149,16 +161,18 @@ removeAuthorizedUser <- function(
 #' List authorized users for an application
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' List authorized users for an application
 #'
-#' Supported servers: ShinyApps servers
+#' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showInvited()]
-#' @note This function works only for ShinyApps servers.
+#' @note This function works for ShinyApps and Posit Connect Cloud.
 #' @export
 showUsers <- function(
   appDir = getwd(),
@@ -166,8 +180,18 @@ showUsers <- function(
   account = NULL,
   server = NULL
 ) {
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "showUsers()",
+    details = paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<https://connect.posit.cloud>."
+    )
+  )
   accountDetails <- accountInfo(account, server)
-  checkShinyappsServer(accountDetails$server)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    checkShinyappsServer(accountDetails$server)
+  }
 
   # resolve application
   if (is.null(appName)) {
@@ -179,23 +203,18 @@ showUsers <- function(
   api <- clientForAccount(accountDetails)
   res <- api$listApplicationAuthorization(application$id)
 
-  # get interesting fields
-  users <- lapply(res, function(x) {
-    a <- list()
-    a$id <- x$user$id
-    a$email <- x$user$email
-    if (!is.null(x$account)) {
-      a$account <- x$account
-    } else {
-      a$account <- NA
-    }
-    return(a)
+  # get interesting fields; build rows as data.frames so rbind yields atomic
+  # columns (do.call(rbind, list_of_lists) produces list-matrix columns).
+  rows <- lapply(res, function(x) {
+    data.frame(
+      id      = as.character(x$user$id),
+      email   = as.character(x$user$email),
+      account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
+      stringsAsFactors = FALSE
+    )
   })
 
-  # convert to data frame
-  users <- do.call(rbind, users)
-  df <- as.data.frame(users, stringsAsFactors = FALSE)
-  return(df)
+  do.call(rbind, rows)
 }
 
 #' List invited users for an application

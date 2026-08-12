@@ -437,6 +437,18 @@ connectCloudClient <- function(service, authInfo) {
 
     getAuthorization = getAuthorization,
 
-    getAccounts = getAccounts
+    getAccounts = getAccounts,
+
+    listApplicationAuthorization = function(appId) {
+      path <- paste0("/contents/", appId, "/users")
+      response <- withTokenRefreshRetry(GET, path)
+      response$data
+    },
+
+    removeApplicationUser = function(appId, userId) {
+      path <- paste0("/contents/", appId, "/users/", userId)
+      withTokenRefreshRetry(DELETE, path)
+      invisible(TRUE)
+    }
   )
 }
