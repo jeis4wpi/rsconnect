@@ -36,12 +36,17 @@ custom message to send in email invitation. Defaults to NULL, which
 will use default invitation message.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
 Add authorized user to application
 
-Supported servers: ShinyApps servers
+Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
-This function works only for ShinyApps servers.
+This function works for ShinyApps and Posit Connect Cloud. On Posit
+Connect Cloud, the content's account must be an organization account.
+The \code{sendEmail} argument is ignored on Posit Connect Cloud;
+PCC always sends an invitation email.
 }
 \seealso{
 \code{\link[=removeAuthorizedUser]{removeAuthorizedUser()}} and \code{\link[=showUsers]{showUsers()}}

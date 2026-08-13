@@ -1,5 +1,17 @@
 # rsconnect (development version)
 
+* `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
+  `showInvited()`, and `resendInvitation()` are now soft-deprecated. Callers
+  will see a deprecation warning with a link to the appropriate web interface
+  (Posit Connect Cloud or shinyapps.io) for managing collaborators directly.
+  These functions continue to work on both ShinyApps and Posit Connect Cloud
+  accounts. On Posit Connect Cloud, the `sendEmail` argument to
+  `addAuthorizedUser()` is silently honored by the API (PCC always emails
+  invitees) and a warning is emitted when it is explicitly set to `FALSE`.
+
+* `applications()` now supports Posit Connect Cloud accounts, returning a
+  data frame with the same columns as for ShinyApps and Posit Connect accounts.
+
 * rsconnect checks whether a newer version of itself is available from your
   configured repositories, and lets you know: as a startup message when the
   package is attached interactively, and as a note appended to deployment errors

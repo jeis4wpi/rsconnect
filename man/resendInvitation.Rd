@@ -31,12 +31,16 @@ there are multiple options, you'll be prompted to pick one.
 Use \code{\link[=accounts]{accounts()}} to see the full list of available options.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
 Resend invitation for invited users of an application
 
-Supported servers: ShinyApps servers
+Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
-This function works only for ShinyApps servers.
+This function works for ShinyApps and Posit Connect Cloud. On Posit
+Connect Cloud, look up the invitation by email address; the
+\code{regenerate} argument has no effect.
 }
 \seealso{
 \code{\link[=showInvited]{showInvited()}}

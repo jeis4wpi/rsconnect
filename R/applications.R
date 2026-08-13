@@ -61,15 +61,18 @@ applications <- function(account = NULL, server = NULL) {
     if (length(apps) == 0) return(empty)
     res <- lapply(apps, function(x) {
       data.frame(
-        id = x$id,
-        name = x$title,
-        title = x$title,
+        id = x$id %||% NA_character_,
+        name = x$title %||% NA_character_,
+        title = x$title %||% NA_character_,
         url = x$current_revision$url %||% NA_character_,
         status = NA_character_,
         size = NA_character_,
         instances = NA_integer_,
+        # accountDetails$name is the authenticated caller's account, which matches
+        # the account_id filter passed to listApplications — content listed here
+        # always belongs to this account, so this URL is correct.
         config_url = paste0(
-          connectCloudUrls()$ui, "/", accountDetails$name, "/content/", x$id
+          connectCloudUrls()$ui, "/", accountDetails$name, "/content/", x$id %||% ""
         ),
         created_time = x$created_time %||% NA_character_,
         updated_time = x$updated_time %||% NA_character_,

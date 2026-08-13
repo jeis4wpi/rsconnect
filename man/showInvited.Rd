@@ -19,12 +19,17 @@ there are multiple options, you'll be prompted to pick one.
 Use \code{\link[=accounts]{accounts()}} to see the full list of available options.}
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+
 List invited users for an application
 
-Supported servers: ShinyApps servers
+Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
-This function works only for ShinyApps servers.
+This function works for ShinyApps and Posit Connect Cloud. On Posit
+Connect Cloud, the \code{link} column is always \code{NA} because the
+accept link is only emailed to the recipient and is never returned by
+the API.
 }
 \seealso{
 \code{\link[=addAuthorizedUser]{addAuthorizedUser()}} and \code{\link[=showUsers]{showUsers()}}

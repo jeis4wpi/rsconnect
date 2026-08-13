@@ -51,6 +51,8 @@ cleanupPasswordFile <- function(appDir) {
 #' @seealso [removeAuthorizedUser()] and [showUsers()]
 #' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
 #'   Connect Cloud, the content's account must be an organization account.
+#'   The \code{sendEmail} argument is ignored on Posit Connect Cloud;
+#'   PCC always sends an invitation email.
 #' @export
 addAuthorizedUser <- function(
   email,
@@ -61,15 +63,18 @@ addAuthorizedUser <- function(
   sendEmail = NULL,
   emailMessage = NULL
 ) {
+  accountDetails <- accountInfo(account, server)
   lifecycle::deprecate_warn(
     "1.10.1.9000",
     "addAuthorizedUser()",
-    details = paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<https://connect.posit.cloud>."
-    )
+    details = if (isPositConnectCloudServer(accountDetails$server)) {
+      paste0("Manage collaborators directly in Posit Connect Cloud at ",
+             "<https://connect.posit.cloud>.")
+    } else {
+      paste0("Manage collaborators directly in shinyapps.io at ",
+             "<https://www.shinyapps.io>.")
+    }
   )
-  accountDetails <- accountInfo(account, server)
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
@@ -82,6 +87,13 @@ addAuthorizedUser <- function(
 
   # check for and remove password file
   cleanupPasswordFile(appDir)
+
+  # PCC always emails invitees; warn if caller explicitly passed sendEmail
+  if (isPositConnectCloudServer(accountDetails$server) && !is.null(sendEmail)) {
+    cli::cli_warn(
+      "{.arg sendEmail} is ignored on Posit Connect Cloud; PCC always sends an invitation email."
+    )
+  }
 
   # fetch authorization list
   api <- clientForAccount(accountDetails)
@@ -121,15 +133,18 @@ removeAuthorizedUser <- function(
   account = NULL,
   server = NULL
 ) {
+  accountDetails <- accountInfo(account, server)
   lifecycle::deprecate_warn(
     "1.10.1.9000",
     "removeAuthorizedUser()",
-    details = paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<https://connect.posit.cloud>."
-    )
+    details = if (isPositConnectCloudServer(accountDetails$server)) {
+      paste0("Manage collaborators directly in Posit Connect Cloud at ",
+             "<https://connect.posit.cloud>.")
+    } else {
+      paste0("Manage collaborators directly in shinyapps.io at ",
+             "<https://www.shinyapps.io>.")
+    }
   )
-  accountDetails <- accountInfo(account, server)
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
@@ -193,15 +208,18 @@ showUsers <- function(
   account = NULL,
   server = NULL
 ) {
+  accountDetails <- accountInfo(account, server)
   lifecycle::deprecate_warn(
     "1.10.1.9000",
     "showUsers()",
-    details = paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<https://connect.posit.cloud>."
-    )
+    details = if (isPositConnectCloudServer(accountDetails$server)) {
+      paste0("Manage collaborators directly in Posit Connect Cloud at ",
+             "<https://connect.posit.cloud>.")
+    } else {
+      paste0("Manage collaborators directly in shinyapps.io at ",
+             "<https://www.shinyapps.io>.")
+    }
   )
-  accountDetails <- accountInfo(account, server)
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
@@ -263,15 +281,18 @@ showInvited <- function(
   account = NULL,
   server = NULL
 ) {
+  accountDetails <- accountInfo(account, server)
   lifecycle::deprecate_warn(
     "1.10.1.9000",
     "showInvited()",
-    details = paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<https://connect.posit.cloud>."
-    )
+    details = if (isPositConnectCloudServer(accountDetails$server)) {
+      paste0("Manage collaborators directly in Posit Connect Cloud at ",
+             "<https://connect.posit.cloud>.")
+    } else {
+      paste0("Manage collaborators directly in shinyapps.io at ",
+             "<https://www.shinyapps.io>.")
+    }
   )
-  accountDetails <- accountInfo(account, server)
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
@@ -292,9 +313,9 @@ showInvited <- function(
   rows <- lapply(res, function(x) {
     data.frame(
       id      = as.character(x$id),
-      email   = as.character(x$email_address %||% x$email),
+      email   = as.character(x$email_address %||% x$email %||% NA_character_),
       link    = as.character(x$link %||% NA_character_),
-      expired = as.logical(x$is_expired %||% x$expired),
+      expired = as.logical(x$is_expired %||% x$expired %||% NA),
       stringsAsFactors = FALSE
     )
   })
@@ -340,15 +361,18 @@ resendInvitation <- function(
   account = NULL,
   server = NULL
 ) {
+  accountDetails <- accountInfo(account, server)
   lifecycle::deprecate_warn(
     "1.10.1.9000",
     "resendInvitation()",
-    details = paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<https://connect.posit.cloud>."
-    )
+    details = if (isPositConnectCloudServer(accountDetails$server)) {
+      paste0("Manage collaborators directly in Posit Connect Cloud at ",
+             "<https://connect.posit.cloud>.")
+    } else {
+      paste0("Manage collaborators directly in shinyapps.io at ",
+             "<https://www.shinyapps.io>.")
+    }
   )
-  accountDetails <- accountInfo(account, server)
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
