@@ -699,3 +699,117 @@ test_that("removeApplicationUser DELETEs /contents/{id}/users/{userId} and retur
   result <- client$removeApplicationUser("content-abc", "user-uuid-1")
   expect_true(result)
 })
+
+test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/invitations", {
+  skip_if_not_installed("webfakes")
+
+  invite_app <- webfakes::new_app()
+  invite_app$use(webfakes::mw_json())
+  invite_app$post("/contents/:id/invitations", function(req, res) {
+    j <- req$json
+    # Validate required payload shape; 400 forces a client error if the body is wrong
+    has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
+    has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
+    has_recv_inv <- is.list(j$recipient_invitations)
+    if (has_email_inv && has_addr && has_recv_inv) {
+      res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
+    } else {
+      res$set_status(400L)$send_json(list(error = "unexpected body shape"), auto_unbox = TRUE)
+    }
+  })
+  app <- webfakes::new_app_process(invite_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$inviteApplicationUser(
+    "content-abc", "alice@example.com", TRUE, "Welcome!"
+  )
+  expect_true(result)
+})
+
+test_that("listApplicationInvitations GETs /contents/{id}/invitations?accepted_time__isnull=true", {
+  skip_if_not_installed("webfakes")
+
+  list_app <- webfakes::new_app()
+  list_app$use(webfakes::mw_json())
+  list_app$get("/contents/:id/invitations", function(req, res) {
+    # 400 if the required filter query param is absent or wrong
+    if (identical(req$query$accepted_time__isnull, "true")) {
+      res$set_status(200L)$send_json(
+        list(
+          data = list(
+            list(id = "inv-1", email_address = "bob@example.com", is_expired = FALSE)
+          )
+        ),
+        auto_unbox = TRUE
+      )
+    } else {
+      res$set_status(400L)$send_json(
+        list(error = "accepted_time__isnull=true must be present"),
+        auto_unbox = TRUE
+      )
+    }
+  })
+  app <- webfakes::new_app_process(list_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$listApplicationInvitations("content-abc")
+
+  expect_equal(length(result), 1L)
+  expect_equal(result[[1]]$id, "inv-1")
+  expect_equal(result[[1]]$email_address, "bob@example.com")
+})
+
+test_that("resendApplicationInvitation sends {} (object not array) to /content_invitations/{id}/resend", {
+  skip_if_not_installed("webfakes")
+
+  resend_app <- webfakes::new_app()
+  resend_app$use(webfakes::mw_json())
+  resend_app$post("/content_invitations/:id/resend", function(req, res) {
+    j <- req$json
+    # {} parses to a named empty list; [] parses to an unnamed empty list
+    # 400 if setNames(list(), character(0)) somehow regressed to list()
+    if (is.list(j) && length(j) == 0L && !is.null(names(j))) {
+      res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
+    } else {
+      res$set_status(400L)$send_json(
+        list(error = "body must be JSON object {} not array []"),
+        auto_unbox = TRUE
+      )
+    }
+  })
+  app <- webfakes::new_app_process(resend_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$resendApplicationInvitation("inv-uuid-1", FALSE)
+  expect_true(result)
+})
