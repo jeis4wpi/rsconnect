@@ -180,7 +180,10 @@ connectCloudClient <- function(service, authInfo) {
         response <- withTokenRefreshRetry(GET, path)
         allItems <- c(allItems, response$data)
         offset <- offset + length(response$data)
-        if (length(response$data) == 0 || isTRUE(offset >= as.numeric(response$total))) {
+        total <- as.numeric(response$total)
+        if (length(response$data) == 0 ||
+            isTRUE(offset >= total) ||
+            (length(total) == 0L && length(response$data) < pageSize)) {
           break
         }
       }

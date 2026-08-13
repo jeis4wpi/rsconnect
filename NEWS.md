@@ -6,8 +6,8 @@
   (Posit Connect Cloud or shinyapps.io) for managing collaborators directly.
   These functions continue to work on both ShinyApps and Posit Connect Cloud
   accounts. On Posit Connect Cloud, the `sendEmail` argument to
-  `addAuthorizedUser()` is silently honored by the API (PCC always emails
-  invitees) and a warning is emitted when it is explicitly set to `FALSE`.
+  `addAuthorizedUser()` is ignored because PCC always emails invitees;
+  a warning is emitted when it is explicitly set to `FALSE`.
 
 * `applications()` now supports Posit Connect Cloud accounts, returning a
   data frame with the same columns as for ShinyApps and Posit Connect accounts.

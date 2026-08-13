@@ -202,6 +202,59 @@ test_that("showInvited returns NA for invitation records missing email and expir
   expect_true(is.na(result$expired))
 })
 
+test_that("showUsers returns NA for user records with absent id and email fields", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = "content-uuid-123"))
+      },
+      listApplicationAuthorization = function(appId) {
+        # record with no user$id or user$email fields
+        list(list(user = list()))
+      }
+    )
+  })
+
+  expect_warning(
+    result <- showUsers(
+      appName = "myapp",
+      account = "myaccount",
+      server = "connect.posit.cloud"
+    ),
+    regexp = "deprecated"
+  )
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 1L)
+  expect_true(is.na(result$id))
+  expect_true(is.na(result$email))
+})
+
+test_that("showUsers errors on non-shinyapps non-PCC server without emitting deprecation", {
+  local_temp_config()
+  addTestServer(url = "https://connect.example.com", name = "connect.example.com")
+  addTestAccount("myaccount", server = "connect.example.com")
+
+  saw_deprecation <- FALSE
+  expect_error(
+    withCallingHandlers(
+      showUsers(appName = "myapp", account = "myaccount",
+                server = "connect.example.com"),
+      warning = function(w) {
+        if (grepl("deprecated", conditionMessage(w), ignore.case = TRUE)) {
+          saw_deprecation <<- TRUE
+        }
+        invokeRestart("muffleWarning")
+      }
+    ),
+    regexp = "shinyapps\\.io"
+  )
+  expect_false(saw_deprecation)
+})
+
 test_that("resendInvitation emits deprecation and calls resendApplicationInvitation on PCC", {
   local_temp_config()
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")

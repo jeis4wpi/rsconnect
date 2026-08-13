@@ -1,3 +1,14 @@
+# Internal: deprecation remediation text varies by backend.
+collaboratorDeprecationDetails <- function(server) {
+  if (isPositConnectCloudServer(server)) {
+    paste0("Manage collaborators directly in Posit Connect Cloud at ",
+           "<https://connect.posit.cloud>.")
+  } else {
+    paste0("Manage collaborators directly in shinyapps.io at ",
+           "<https://www.shinyapps.io>.")
+  }
+}
+
 cleanupPasswordFile <- function(appDir) {
   check_directory(appDir)
   appDir <- normalizePath(appDir)
@@ -64,20 +75,14 @@ addAuthorizedUser <- function(
   emailMessage = NULL
 ) {
   accountDetails <- accountInfo(account, server)
-  lifecycle::deprecate_warn(
-    "1.10.1.9000",
-    "addAuthorizedUser()",
-    details = if (isPositConnectCloudServer(accountDetails$server)) {
-      paste0("Manage collaborators directly in Posit Connect Cloud at ",
-             "<https://connect.posit.cloud>.")
-    } else {
-      paste0("Manage collaborators directly in shinyapps.io at ",
-             "<https://www.shinyapps.io>.")
-    }
-  )
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "addAuthorizedUser()",
+    details = collaboratorDeprecationDetails(accountDetails$server)
+  )
 
   # resolve application
   if (is.null(appName)) {
@@ -88,8 +93,8 @@ addAuthorizedUser <- function(
   # check for and remove password file
   cleanupPasswordFile(appDir)
 
-  # PCC always emails invitees; warn if caller explicitly passed sendEmail
-  if (isPositConnectCloudServer(accountDetails$server) && !is.null(sendEmail)) {
+  # PCC always emails invitees; warn only when caller explicitly opts out
+  if (isPositConnectCloudServer(accountDetails$server) && identical(sendEmail, FALSE)) {
     cli::cli_warn(
       "{.arg sendEmail} is ignored on Posit Connect Cloud; PCC always sends an invitation email."
     )
@@ -134,20 +139,14 @@ removeAuthorizedUser <- function(
   server = NULL
 ) {
   accountDetails <- accountInfo(account, server)
-  lifecycle::deprecate_warn(
-    "1.10.1.9000",
-    "removeAuthorizedUser()",
-    details = if (isPositConnectCloudServer(accountDetails$server)) {
-      paste0("Manage collaborators directly in Posit Connect Cloud at ",
-             "<https://connect.posit.cloud>.")
-    } else {
-      paste0("Manage collaborators directly in shinyapps.io at ",
-             "<https://www.shinyapps.io>.")
-    }
-  )
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "removeAuthorizedUser()",
+    details = collaboratorDeprecationDetails(accountDetails$server)
+  )
 
   # resolve application
   if (is.null(appName)) {
@@ -209,20 +208,14 @@ showUsers <- function(
   server = NULL
 ) {
   accountDetails <- accountInfo(account, server)
-  lifecycle::deprecate_warn(
-    "1.10.1.9000",
-    "showUsers()",
-    details = if (isPositConnectCloudServer(accountDetails$server)) {
-      paste0("Manage collaborators directly in Posit Connect Cloud at ",
-             "<https://connect.posit.cloud>.")
-    } else {
-      paste0("Manage collaborators directly in shinyapps.io at ",
-             "<https://www.shinyapps.io>.")
-    }
-  )
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "showUsers()",
+    details = collaboratorDeprecationDetails(accountDetails$server)
+  )
 
   # resolve application
   if (is.null(appName)) {
@@ -238,8 +231,8 @@ showUsers <- function(
   # columns (do.call(rbind, list_of_lists) produces list-matrix columns).
   rows <- lapply(res, function(x) {
     data.frame(
-      id      = as.character(x$user$id),
-      email   = as.character(x$user$email),
+      id      = as.character(x$user$id %||% NA_character_),
+      email   = as.character(x$user$email %||% NA_character_),
       account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
       stringsAsFactors = FALSE
     )
@@ -282,20 +275,14 @@ showInvited <- function(
   server = NULL
 ) {
   accountDetails <- accountInfo(account, server)
-  lifecycle::deprecate_warn(
-    "1.10.1.9000",
-    "showInvited()",
-    details = if (isPositConnectCloudServer(accountDetails$server)) {
-      paste0("Manage collaborators directly in Posit Connect Cloud at ",
-             "<https://connect.posit.cloud>.")
-    } else {
-      paste0("Manage collaborators directly in shinyapps.io at ",
-             "<https://www.shinyapps.io>.")
-    }
-  )
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "showInvited()",
+    details = collaboratorDeprecationDetails(accountDetails$server)
+  )
 
   # resolve application
   if (is.null(appName)) {
@@ -312,7 +299,7 @@ showInvited <- function(
   # produces list-matrix columns).
   rows <- lapply(res, function(x) {
     data.frame(
-      id      = as.character(x$id),
+      id      = as.character(x$id %||% NA_character_),
       email   = as.character(x$email_address %||% x$email %||% NA_character_),
       link    = as.character(x$link %||% NA_character_),
       expired = as.logical(x$is_expired %||% x$expired %||% NA),
@@ -362,20 +349,14 @@ resendInvitation <- function(
   server = NULL
 ) {
   accountDetails <- accountInfo(account, server)
-  lifecycle::deprecate_warn(
-    "1.10.1.9000",
-    "resendInvitation()",
-    details = if (isPositConnectCloudServer(accountDetails$server)) {
-      paste0("Manage collaborators directly in Posit Connect Cloud at ",
-             "<https://connect.posit.cloud>.")
-    } else {
-      paste0("Manage collaborators directly in shinyapps.io at ",
-             "<https://www.shinyapps.io>.")
-    }
-  )
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "resendInvitation()",
+    details = collaboratorDeprecationDetails(accountDetails$server)
+  )
 
   # get invitations
   invited <- showInvited(appDir, appName, account, server)
