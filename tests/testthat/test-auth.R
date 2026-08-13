@@ -79,3 +79,93 @@ test_that("showUsers returns empty data frame with correct columns when no users
   expect_equal(nrow(result), 0L)
   expect_named(result, c("id", "email", "account"))
 })
+
+test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser on PCC", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  invited <- list()
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = "content-uuid-123"))
+      },
+      inviteApplicationUser = function(appId, email, sendEmail, emailMessage) {
+        invited[[length(invited) + 1]] <<- list(appId = appId, email = email)
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    addAuthorizedUser("alice@example.com", appName = "myapp",
+                      account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_length(invited, 1)
+  expect_equal(invited[[1]]$email, "alice@example.com")
+})
+
+test_that("showInvited emits deprecation and maps PCC email_address/is_expired fields", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = "content-uuid-123"))
+      },
+      listApplicationInvitations = function(appId) {
+        list(list(
+          id = "invite-uuid-1",
+          email_address = "alice@example.com",
+          is_expired = FALSE
+        ))
+      }
+    )
+  })
+
+  expect_warning(
+    result <- showInvited(appName = "myapp", account = "myaccount",
+                          server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(result$email, "alice@example.com")
+  expect_true(is.na(result$link))
+  expect_false(result$expired)
+})
+
+test_that("resendInvitation emits deprecation and calls resendApplicationInvitation on PCC", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  resent_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = "content-uuid-123"))
+      },
+      listApplicationInvitations = function(appId) {
+        list(list(
+          id = "invite-uuid-1",
+          email_address = "alice@example.com",
+          is_expired = FALSE
+        ))
+      },
+      resendApplicationInvitation = function(inviteId, regenerate) {
+        resent_id <<- inviteId
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    resendInvitation("alice@example.com", appName = "myapp",
+                     account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(resent_id, "invite-uuid-1")
+})

@@ -32,9 +32,11 @@ cleanupPasswordFile <- function(appDir) {
 #' Add authorized user to application
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' Add authorized user to application
 #'
-#' Supported servers: ShinyApps servers
+#' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param email Email address of user to add.
 #' @param appDir Directory containing application. Defaults to
@@ -47,7 +49,8 @@ cleanupPasswordFile <- function(appDir) {
 #'   custom message to send in email invitation. Defaults to NULL, which
 #'   will use default invitation message.
 #' @seealso [removeAuthorizedUser()] and [showUsers()]
-#' @note This function works only for ShinyApps servers.
+#' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
+#'   Connect Cloud, the content's account must be an organization account.
 #' @export
 addAuthorizedUser <- function(
   email,
@@ -58,8 +61,18 @@ addAuthorizedUser <- function(
   sendEmail = NULL,
   emailMessage = NULL
 ) {
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "addAuthorizedUser()",
+    details = paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<https://connect.posit.cloud>."
+    )
+  )
   accountDetails <- accountInfo(account, server)
-  checkShinyappsServer(accountDetails$server)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    checkShinyappsServer(accountDetails$server)
+  }
 
   # resolve application
   if (is.null(appName)) {
@@ -228,16 +241,21 @@ showUsers <- function(
 #' List invited users for an application
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' List invited users for an application
 #'
-#' Supported servers: ShinyApps servers
+#' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showUsers()]
-#' @note This function works only for ShinyApps servers.
+#' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
+#'   Connect Cloud, the \code{link} column is always \code{NA} because the
+#'   accept link is only emailed to the recipient and is never returned by
+#'   the API.
 #' @export
 showInvited <- function(
   appDir = getwd(),
@@ -245,8 +263,18 @@ showInvited <- function(
   account = NULL,
   server = NULL
 ) {
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "showInvited()",
+    details = paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<https://connect.posit.cloud>."
+    )
+  )
   accountDetails <- accountInfo(account, server)
-  checkShinyappsServer(accountDetails$server)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    checkShinyappsServer(accountDetails$server)
+  }
 
   # resolve application
   if (is.null(appName)) {
@@ -258,28 +286,39 @@ showInvited <- function(
   api <- clientForAccount(accountDetails)
   res <- api$listApplicationInvitations(application$id)
 
-  # get interesting fields
-  users <- lapply(res, function(x) {
-    a <- list()
-    a$id <- x$id
-    a$email <- x$email
-    a$link <- x$link
-    a$expired <- x$expired
-    return(a)
+  # get interesting fields; PCC uses email_address / is_expired; shinyapps uses email / expired.
+  # Build rows as data.frames so rbind yields atomic columns (do.call(rbind, list_of_lists)
+  # produces list-matrix columns).
+  rows <- lapply(res, function(x) {
+    data.frame(
+      id      = as.character(x$id),
+      email   = as.character(x$email_address %||% x$email),
+      link    = as.character(x$link %||% NA_character_),
+      expired = as.logical(x$is_expired %||% x$expired),
+      stringsAsFactors = FALSE
+    )
   })
 
-  # convert to data frame
-  users <- do.call(rbind, users)
-  df <- as.data.frame(users, stringsAsFactors = FALSE)
-  return(df)
+  if (length(rows) == 0L) {
+    return(data.frame(
+      id      = character(),
+      email   = character(),
+      link    = character(),
+      expired = logical(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
 }
 
 #' Resend invitation for invited users of an application
 #'
 #' @description
+#' `r lifecycle::badge("deprecated")`
+#'
 #' Resend invitation for invited users of an application
 #'
-#' Supported servers: ShinyApps servers
+#' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param invite The invitation to resend. Can be id or email address.
 #' @param regenerate Regenerate the invite code. Can be helpful is the
@@ -289,7 +328,9 @@ showInvited <- function(
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [showInvited()]
-#' @note This function works only for ShinyApps servers.
+#' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
+#'   Connect Cloud, look up the invitation by email address; the
+#'   \code{regenerate} argument has no effect.
 #' @export
 resendInvitation <- function(
   invite,
@@ -299,8 +340,18 @@ resendInvitation <- function(
   account = NULL,
   server = NULL
 ) {
+  lifecycle::deprecate_warn(
+    "1.10.1.9000",
+    "resendInvitation()",
+    details = paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<https://connect.posit.cloud>."
+    )
+  )
   accountDetails <- accountInfo(account, server)
-  checkShinyappsServer(accountDetails$server)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    checkShinyappsServer(accountDetails$server)
+  }
 
   # get invitations
   invited <- showInvited(appDir, appName, account, server)

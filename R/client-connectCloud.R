@@ -449,6 +449,31 @@ connectCloudClient <- function(service, authInfo) {
       path <- paste0("/contents/", appId, "/users/", userId)
       withTokenRefreshRetry(DELETE, path)
       invisible(TRUE)
+    },
+
+    inviteApplicationUser = function(appId, email, sendEmail, emailMessage) {
+      path <- paste0("/contents/", appId, "/invitations")
+      json <- list(
+        message = emailMessage,
+        email_invitations = list(list(email_address = email)),
+        recipient_invitations = list()
+      )
+      withTokenRefreshRetry(POST_JSON, path, json)
+      invisible(TRUE)
+    },
+
+    listApplicationInvitations = function(appId) {
+      path <- paste0("/contents/", appId, "/invitations?accepted_time__isnull=true")
+      response <- withTokenRefreshRetry(GET, path)
+      response$data
+    },
+
+    resendApplicationInvitation = function(inviteId, regenerate) {
+      # regenerate is shinyapps.io-specific; PCC re-sends the existing invite email.
+      # Use setNames(list(), character(0)) to produce {} not [] at the wire level.
+      path <- paste0("/content_invitations/", inviteId, "/resend")
+      withTokenRefreshRetry(POST_JSON, path, setNames(list(), character(0)))
+      invisible(TRUE)
     }
   )
 }
