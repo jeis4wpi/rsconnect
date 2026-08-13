@@ -638,3 +638,64 @@ test_that("listApplications() filters by exact name, not substring", {
   expect_equal(result[[1]]$id, "c1")
   expect_equal(result[[1]]$name, "my-app")
 })
+
+test_that("listApplicationAuthorization GETs /contents/{id}/users and returns parsed data", {
+  skip_if_not_installed("webfakes")
+
+  users_app <- webfakes::new_app()
+  users_app$use(webfakes::mw_json())
+  users_app$get("/contents/:id/users", function(req, res) {
+    res$set_status(200L)$send_json(
+      list(
+        data = list(
+          list(user = list(id = "user-uuid-1", email = "alice@example.com"), account = "acct-a"),
+          list(user = list(id = "user-uuid-2", email = "bob@example.com"),   account = "acct-b")
+        )
+      ),
+      auto_unbox = TRUE
+    )
+  })
+  app <- webfakes::new_app_process(users_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$listApplicationAuthorization("content-abc")
+  expect_equal(length(result), 2L)
+  expect_equal(result[[1]]$user$email, "alice@example.com")
+  expect_equal(result[[2]]$user$email, "bob@example.com")
+  expect_equal(result[[1]]$user$id,    "user-uuid-1")
+})
+
+test_that("removeApplicationUser DELETEs /contents/{id}/users/{userId} and returns TRUE", {
+  skip_if_not_installed("webfakes")
+
+  delete_app <- webfakes::new_app()
+  delete_app$use(webfakes::mw_json())
+  delete_app$delete("/contents/:id/users/:userId", function(req, res) {
+    res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
+  })
+  app <- webfakes::new_app_process(delete_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$removeApplicationUser("content-abc", "user-uuid-1")
+  expect_true(result)
+})

@@ -55,3 +55,27 @@ test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUse
   )
   expect_equal(removed_user_id, "user-uuid-1")
 })
+
+test_that("showUsers returns empty data frame with correct columns when no users authorized", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = "content-uuid-123"))
+      },
+      listApplicationAuthorization = function(appId) list()
+    )
+  })
+
+  expect_warning(
+    result <- showUsers(appName = "myapp", account = "myaccount",
+                        server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 0L)
+  expect_named(result, c("id", "email", "account"))
+})

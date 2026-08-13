@@ -214,6 +214,14 @@ showUsers <- function(
     )
   })
 
+  if (length(rows) == 0L) {
+    return(data.frame(
+      id      = character(),
+      email   = character(),
+      account = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
   do.call(rbind, rows)
 }
 
