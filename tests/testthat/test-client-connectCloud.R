@@ -748,7 +748,7 @@ test_that("inviteApplicationUser sends null message field when emailMessage is N
     # jsonlite parses null back to NULL, so is.null(j$message) must be TRUE.
     has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
     has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
-    has_null_msg <- is.null(j$message)
+    has_null_msg <- is.null(j$message) && "message" %in% names(j)
     if (has_email_inv && has_addr && has_null_msg) {
       res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
     } else {

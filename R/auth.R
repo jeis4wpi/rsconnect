@@ -2,7 +2,7 @@
 collaboratorDeprecationDetails <- function(server) {
   if (isPositConnectCloudServer(server)) {
     paste0("Manage collaborators directly in Posit Connect Cloud at ",
-           "<https://connect.posit.cloud>.")
+           "<", connectCloudUrls()$ui, ">.")
   } else {
     paste0("Manage collaborators directly in shinyapps.io at ",
            "<https://www.shinyapps.io>.")
