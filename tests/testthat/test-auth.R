@@ -618,6 +618,72 @@ test_that("resendInvitation resolves by UUID invite id on PCC (not email-only fa
   expect_equal(resent_id, "invite-uuid-xyz")
 })
 
+test_that("removeAuthorizedUser aborts with clear message when matched user has no id", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        # user record has email but no id field — id will be NA after showUsers_impl
+        list(list(user = list(email = "alice@example.com")))
+      }
+    )
+  })
+
+  expect_warning(
+    expect_error(
+      removeAuthorizedUser("alice@example.com", appDir = app_dir,
+                           account = "myaccount", server = "connect.posit.cloud"),
+      regexp = "no id"
+    ),
+    regexp = "deprecated"
+  )
+})
+
+test_that("resendInvitation aborts with clear message when matched invitation has no id", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationInvitations = function(appId) {
+        # invitation record has email_address but no id — id will be NA after showInvited_impl
+        list(list(email_address = "alice@example.com", is_expired = FALSE))
+      }
+    )
+  })
+
+  expect_warning(
+    expect_error(
+      resendInvitation("alice@example.com", appDir = app_dir,
+                       account = "myaccount", server = "connect.posit.cloud"),
+      regexp = "no id"
+    ),
+    regexp = "deprecated"
+  )
+})
+
 test_that("cleanupPasswordFile is NOT called on PCC accounts", {
   local_temp_config()
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")

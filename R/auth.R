@@ -273,6 +273,13 @@ removeAuthorizedUser <- function(
     stop("User \"", user, "\" not found", call. = FALSE)
   }
 
+  if (is.na(user$id)) {
+    cli::cli_abort(c(
+      "Cannot remove user {.val {user$email}}: the matched record has no id.",
+      i = "This is unexpected; contact Posit support if this persists."
+    ))
+  }
+
   # remove user (api already built above)
   api$removeApplicationUser(application$id, user$id)
 
@@ -387,9 +394,14 @@ showInvited <- function(
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [showInvited()]
-#' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
-#'   Connect Cloud, look up the invitation by email address; the
-#'   \code{regenerate} argument has no effect.
+#' @note This function works for ShinyApps and Posit Connect Cloud. The
+#'   invitation can be selected by id or email address. On Posit Connect Cloud,
+#'   the \code{regenerate} argument has no effect.
+#'
+#'   On Posit Connect Cloud, the content is resolved from the local deployment
+#'   record in \code{appDir}; the call must run from the directory that contains
+#'   the \code{rsconnect/} deployment record. \code{appName} selects among
+#'   multiple records in the same directory.
 #' @export
 resendInvitation <- function(
   invite,
@@ -424,6 +436,13 @@ resendInvitation <- function(
     invite <- invited[invited$email == invite, ]
   } else {
     stop("Invitation for \"", invite, "\" not found", call. = FALSE)
+  }
+
+  if (is.na(invite$id)) {
+    cli::cli_abort(c(
+      "Cannot resend invitation for {.val {invite$email}}: the matched record has no id.",
+      i = "This is unexpected; contact Posit support if this persists."
+    ))
   }
 
   # resend invitation (api already built above)

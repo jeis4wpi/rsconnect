@@ -38,9 +38,14 @@ Resend invitation for invited users of an application
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
-This function works for ShinyApps and Posit Connect Cloud. On Posit
-Connect Cloud, look up the invitation by email address; the
-\code{regenerate} argument has no effect.
+This function works for ShinyApps and Posit Connect Cloud. The
+invitation can be selected by id or email address. On Posit Connect Cloud,
+the \code{regenerate} argument has no effect.
+
+On Posit Connect Cloud, the content is resolved from the local deployment
+record in \code{appDir}; the call must run from the directory that contains
+the \code{rsconnect/} deployment record. \code{appName} selects among
+multiple records in the same directory.
 }
 \seealso{
 \code{\link[=showInvited]{showInvited()}}
