@@ -49,7 +49,8 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
     recs <- deployments(
       appPath = appDir,
       accountFilter = accountDetails$name,
-      serverFilter = accountDetails$server
+      serverFilter = accountDetails$server,
+      nameFilter = appName
     )
     if (nrow(recs) == 0L) {
       cli::cli_abort(c(
@@ -61,10 +62,8 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
       ))
     }
     if (nrow(recs) > 1L) {
-      cli::cli_abort(c(
-        "Found {nrow(recs)} deployment records for {.file {appDir}}.",
-        i = "Narrow the target by supplying {.arg account} and/or {.arg server}."
-      ))
+      dep <- disambiguateDeployments(recs)
+      return(list(id = dep$appId))
     }
     list(id = recs$appId[[1L]])
   } else {
@@ -96,6 +95,11 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 #'   Connect Cloud, the content's account must be an organization account.
 #'   The \code{sendEmail} argument is ignored on Posit Connect Cloud;
 #'   PCC always sends an invitation email.
+#'
+#'   On Posit Connect Cloud, the content is resolved from the local deployment
+#'   record in \code{appDir}; the call must run from the directory that contains
+#'   the \code{rsconnect/} deployment record. \code{appName} selects among
+#'   multiple records in the same directory.
 #' @export
 addAuthorizedUser <- function(
   email,
@@ -158,6 +162,11 @@ addAuthorizedUser <- function(
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showUsers()]
 #' @note This function works for ShinyApps and Posit Connect Cloud.
+#'
+#'   On Posit Connect Cloud, the content is resolved from the local deployment
+#'   record in \code{appDir}; the call must run from the directory that contains
+#'   the \code{rsconnect/} deployment record. \code{appName} selects among
+#'   multiple records in the same directory.
 #' @export
 removeAuthorizedUser <- function(
   user,
@@ -224,6 +233,11 @@ removeAuthorizedUser <- function(
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showInvited()]
 #' @note This function works for ShinyApps and Posit Connect Cloud.
+#'
+#'   On Posit Connect Cloud, the content is resolved from the local deployment
+#'   record in \code{appDir}; the call must run from the directory that contains
+#'   the \code{rsconnect/} deployment record. \code{appName} selects among
+#'   multiple records in the same directory.
 #' @export
 showUsers <- function(
   appDir = getwd(),
@@ -287,6 +301,11 @@ showUsers <- function(
 #'   Connect Cloud, the \code{link} column is always \code{NA} because the
 #'   accept link is only emailed to the recipient and is never returned by
 #'   the API.
+#'
+#'   On Posit Connect Cloud, the content is resolved from the local deployment
+#'   record in \code{appDir}; the call must run from the directory that contains
+#'   the \code{rsconnect/} deployment record. \code{appName} selects among
+#'   multiple records in the same directory.
 #' @export
 showInvited <- function(
   appDir = getwd(),

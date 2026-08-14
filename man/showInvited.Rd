@@ -30,6 +30,11 @@ This function works for ShinyApps and Posit Connect Cloud. On Posit
 Connect Cloud, the \code{link} column is always \code{NA} because the
 accept link is only emailed to the recipient and is never returned by
 the API.
+
+On Posit Connect Cloud, the content is resolved from the local deployment
+record in \code{appDir}; the call must run from the directory that contains
+the \code{rsconnect/} deployment record. \code{appName} selects among
+multiple records in the same directory.
 }
 \seealso{
 \code{\link[=addAuthorizedUser]{addAuthorizedUser()}} and \code{\link[=showUsers]{showUsers()}}

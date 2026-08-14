@@ -389,6 +389,75 @@ test_that("resolveContentTarget aborts with clear message on PCC when no deploym
   )
 })
 
+test_that("resolveContentTarget: appName selects correct record among multiple in appDir", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "a",
+    appId = "content-uuid-aaa",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+  addTestDeployment(
+    app_dir,
+    appName = "b",
+    appId = "content-uuid-bbb",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  captured_app_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        captured_app_id <<- appId
+        list()
+      }
+    )
+  })
+
+  expect_warning(
+    showUsers(appDir = app_dir, appName = "b",
+              account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(captured_app_id, "content-uuid-bbb")
+})
+
+test_that("resolveContentTarget: omitting appName with multiple records lists candidates non-interactively", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "a",
+    appId = "content-uuid-aaa",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+  addTestDeployment(
+    app_dir,
+    appName = "b",
+    appId = "content-uuid-bbb",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  expect_error(
+    suppressWarnings(
+      showUsers(appDir = app_dir, account = "myaccount",
+                server = "connect.posit.cloud")
+    ),
+    regexp = "appName|disambiguate|Known"
+  )
+})
+
 test_that("resolveContentTarget delegates to resolveApplication on shinyapps.io", {
   local_temp_config()
   addTestServer(url = "https://shinyapps.io", name = "shinyapps.io")
