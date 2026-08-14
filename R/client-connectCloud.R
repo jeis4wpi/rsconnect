@@ -448,9 +448,26 @@ connectCloudClient <- function(service, authInfo) {
     getAccounts = getAccounts,
 
     listApplicationAuthorization = function(appId) {
-      path <- paste0("/contents/", appId, "/users")
-      response <- withTokenRefreshRetry(GET, path)
-      response$data
+      pageSize <- 100
+      offset <- 0
+      allItems <- list()
+      repeat {
+        path <- paste0(
+          "/contents/", appId, "/users",
+          "?include_total=true&limit=", pageSize,
+          "&offset=", offset
+        )
+        response <- withTokenRefreshRetry(GET, path)
+        allItems <- c(allItems, response$data)
+        offset <- offset + length(response$data)
+        total <- as.numeric(response$total)
+        if (length(response$data) == 0 ||
+            isTRUE(offset >= total) ||
+            (length(total) == 0L && length(response$data) < pageSize)) {
+          break
+        }
+      }
+      allItems
     },
 
     removeApplicationUser = function(appId, userId) {
@@ -471,9 +488,26 @@ connectCloudClient <- function(service, authInfo) {
     },
 
     listApplicationInvitations = function(appId) {
-      path <- paste0("/contents/", appId, "/invitations?accepted_time__isnull=true")
-      response <- withTokenRefreshRetry(GET, path)
-      response$data
+      pageSize <- 100
+      offset <- 0
+      allItems <- list()
+      repeat {
+        path <- paste0(
+          "/contents/", appId, "/invitations",
+          "?accepted_time__isnull=true&include_total=true&limit=", pageSize,
+          "&offset=", offset
+        )
+        response <- withTokenRefreshRetry(GET, path)
+        allItems <- c(allItems, response$data)
+        offset <- offset + length(response$data)
+        total <- as.numeric(response$total)
+        if (length(response$data) == 0 ||
+            isTRUE(offset >= total) ||
+            (length(total) == 0L && length(response$data) < pageSize)) {
+          break
+        }
+      }
+      allItems
     },
 
     resendApplicationInvitation = function(inviteId, regenerate) {

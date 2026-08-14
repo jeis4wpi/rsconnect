@@ -182,8 +182,10 @@ addAuthorizedUser <- function(
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
-  # check for and remove password file
-  cleanupPasswordFile(appDir)
+  # check for and remove password file (shinyapps.io only; PCC has no password file)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    cleanupPasswordFile(appDir)
+  }
 
   # PCC always emails invitees; warn only when caller explicitly opts out
   if (isPositConnectCloudServer(accountDetails$server) && identical(sendEmail, FALSE)) {
@@ -247,8 +249,10 @@ removeAuthorizedUser <- function(
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
-  # check and remove password file
-  cleanupPasswordFile(appDir)
+  # check and remove password file (shinyapps.io only; PCC has no password file)
+  if (!isPositConnectCloudServer(accountDetails$server)) {
+    cleanupPasswordFile(appDir)
+  }
 
   # resolve content exactly once: use impl so showUsers() does not call
   # resolveContentTarget() a second time (a second interactive prompt could
@@ -258,20 +262,15 @@ removeAuthorizedUser <- function(
   api <- clientForAccount(accountDetails)
   users <- showUsers_impl(api, application$id)
 
-  if (is.numeric(user)) {
-    # lookup by id
-    if (user %in% users$id) {
-      user <- users[users$id == user, ]
-    } else {
-      stop("User ", user, " not found", call. = FALSE)
-    }
+  user <- as.character(user)
+  # Match id first (UUID strings on PCC, numeric-as-character on shinyapps.io),
+  # then fall back to email. The old is.numeric() branch missed PCC UUID ids.
+  if (user %in% users$id) {
+    user <- users[users$id == user, ]
+  } else if (user %in% users$email) {
+    user <- users[users$email == user, ]
   } else {
-    # lookup by email
-    if (user %in% users$email) {
-      user <- users[users$email == user, ]
-    } else {
-      stop("User \"", user, "\" not found", call. = FALSE)
-    }
+    stop("User \"", user, "\" not found", call. = FALSE)
   }
 
   # remove user (api already built above)
@@ -416,20 +415,15 @@ resendInvitation <- function(
   api <- clientForAccount(accountDetails)
   invited <- showInvited_impl(api, application$id)
 
-  if (is.numeric(invite)) {
-    # lookup by id
-    if (invite %in% invited$id) {
-      invite <- invited[invited$id == invite, ]
-    } else {
-      stop("Invitation \"", invite, "\" not found", call. = FALSE)
-    }
+  invite <- as.character(invite)
+  # Match id first (UUID strings on PCC, numeric-as-character on shinyapps.io),
+  # then fall back to email. The old is.numeric() branch missed PCC UUID ids.
+  if (invite %in% invited$id) {
+    invite <- invited[invited$id == invite, ]
+  } else if (invite %in% invited$email) {
+    invite <- invited[invited$email == invite, ]
   } else {
-    # lookup by email
-    if (invite %in% invited$email) {
-      invite <- invited[invited$email == invite, ]
-    } else {
-      stop("Invitation for \"", invite, "\" not found", call. = FALSE)
-    }
+    stop("Invitation for \"", invite, "\" not found", call. = FALSE)
   }
 
   # resend invitation (api already built above)

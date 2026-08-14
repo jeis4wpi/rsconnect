@@ -852,3 +852,98 @@ test_that("resendApplicationInvitation sends {} (object not array) to /content_i
   result <- client$resendApplicationInvitation("inv-uuid-1", FALSE)
   expect_true(result)
 })
+
+test_that("listApplicationAuthorization accumulates multiple pages", {
+  skip_if_not_installed("webfakes")
+
+  # Page 1: 2 users. Page 2: 1 user. Total=3 reported on each page.
+  page1 <- list(
+    list(user = list(id = "u1", email = "a@example.com"), account = "acct-a"),
+    list(user = list(id = "u2", email = "b@example.com"), account = "acct-b")
+  )
+  page2 <- list(
+    list(user = list(id = "u3", email = "c@example.com"), account = "acct-c")
+  )
+
+  users_app <- webfakes::new_app()
+  users_app$use(webfakes::mw_json())
+  users_app$get("/contents/:id/users", function(req, res) {
+    offset <- as.integer(req$query$offset %||% "0")
+    if (offset == 0L) {
+      res$set_status(200L)$send_json(
+        list(data = page1, total = 3L),
+        auto_unbox = TRUE
+      )
+    } else {
+      res$set_status(200L)$send_json(
+        list(data = page2, total = 3L),
+        auto_unbox = TRUE
+      )
+    }
+  })
+  app <- webfakes::new_app_process(users_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud", name = "some-user", username = "some-user",
+    accountId = "123", accessToken = "tok", refreshToken = "ref"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$listApplicationAuthorization("content-abc")
+  expect_equal(length(result), 3L)
+  expect_equal(result[[1]]$user$id, "u1")
+  expect_equal(result[[2]]$user$id, "u2")
+  expect_equal(result[[3]]$user$id, "u3")
+})
+
+test_that("listApplicationInvitations accumulates multiple pages and keeps accepted_time__isnull filter", {
+  skip_if_not_installed("webfakes")
+
+  page1 <- list(
+    list(id = "inv-1", email_address = "a@example.com", is_expired = FALSE),
+    list(id = "inv-2", email_address = "b@example.com", is_expired = FALSE)
+  )
+  page2 <- list(
+    list(id = "inv-3", email_address = "c@example.com", is_expired = TRUE)
+  )
+
+  inv_app <- webfakes::new_app()
+  inv_app$use(webfakes::mw_json())
+  inv_app$get("/contents/:id/invitations", function(req, res) {
+    # Reject if the required filter param is absent
+    if (!identical(req$query$accepted_time__isnull, "true")) {
+      res$set_status(400L)$send_json(
+        list(error = "accepted_time__isnull=true must be present"),
+        auto_unbox = TRUE
+      )
+      return()
+    }
+    offset <- as.integer(req$query$offset %||% "0")
+    if (offset == 0L) {
+      res$set_status(200L)$send_json(
+        list(data = page1, total = 3L),
+        auto_unbox = TRUE
+      )
+    } else {
+      res$set_status(200L)$send_json(
+        list(data = page2, total = 3L),
+        auto_unbox = TRUE
+      )
+    }
+  })
+  app <- webfakes::new_app_process(inv_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud", name = "some-user", username = "some-user",
+    accountId = "123", accessToken = "tok", refreshToken = "ref"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$listApplicationInvitations("content-abc")
+  expect_equal(length(result), 3L)
+  expect_equal(result[[1]]$id, "inv-1")
+  expect_equal(result[[2]]$id, "inv-2")
+  expect_equal(result[[3]]$id, "inv-3")
+})

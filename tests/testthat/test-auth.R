@@ -539,3 +539,113 @@ test_that("removeAuthorizedUser resolves content target exactly once (no double 
   # removeApplicationUser called with "b"'s appId, not "a"'s
   expect_equal(removed_app_id, "content-uuid-bbb")
 })
+
+test_that("removeAuthorizedUser resolves by UUID id on PCC (not email-only fallback)", {
+  # Regression: is.numeric("uuid-string") == FALSE, so the old code fell to the
+  # email branch and never matched PCC UUID ids.
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  removed_user_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        list(list(user = list(id = "user-uuid-abc", email = "alice@example.com")))
+      },
+      removeApplicationUser = function(appId, userId) {
+        removed_user_id <<- userId
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    removeAuthorizedUser("user-uuid-abc", appDir = app_dir,
+                          account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(removed_user_id, "user-uuid-abc")
+})
+
+test_that("resendInvitation resolves by UUID invite id on PCC (not email-only fallback)", {
+  # Same is.numeric() bug as removeAuthorizedUser: UUID invite ids are character,
+  # so the old code fell to the email branch and never matched by id.
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  resent_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationInvitations = function(appId) {
+        list(list(
+          id = "invite-uuid-xyz",
+          email_address = "bob@example.com",
+          is_expired = FALSE
+        ))
+      },
+      resendApplicationInvitation = function(inviteId, regenerate) {
+        resent_id <<- inviteId
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    resendInvitation("invite-uuid-xyz", appDir = app_dir,
+                     account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(resent_id, "invite-uuid-xyz")
+})
+
+test_that("cleanupPasswordFile is NOT called on PCC accounts", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  cleanup_called <- FALSE
+  local_mocked_bindings(
+    cleanupPasswordFile = function(...) { cleanup_called <<- TRUE; invisible(TRUE) },
+    clientForAccount = function(...) {
+      list(
+        inviteApplicationUser = function(...) invisible(TRUE)
+      )
+    }
+  )
+
+  expect_warning(
+    addAuthorizedUser("alice@example.com", appDir = app_dir,
+                      account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_false(cleanup_called)
+})
