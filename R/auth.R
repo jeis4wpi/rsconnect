@@ -40,6 +40,38 @@ cleanupPasswordFile <- function(appDir) {
   invisible(TRUE)
 }
 
+# Internal: resolve the target content for collaborator management functions.
+# On PCC, reads the local deployment record to get the content id (appId)
+# rather than matching by title (mutable, non-unique on PCC).
+# On shinyapps.io, delegates to resolveApplication() unchanged.
+resolveContentTarget <- function(accountDetails, appDir, appName) {
+  if (isPositConnectCloudServer(accountDetails$server)) {
+    recs <- deployments(
+      appPath = appDir,
+      accountFilter = accountDetails$name,
+      serverFilter = accountDetails$server
+    )
+    if (nrow(recs) == 0L) {
+      cli::cli_abort(c(
+        "Can't identify the Posit Connect Cloud content for {.file {appDir}}.",
+        i = paste0(
+          "No deployment record found. Deploy the content first, or run from ",
+          "the project directory that contains its {.path rsconnect/} record."
+        )
+      ))
+    }
+    if (nrow(recs) > 1L) {
+      cli::cli_abort(c(
+        "Found {nrow(recs)} deployment records for {.file {appDir}}.",
+        i = "Narrow the target by supplying {.arg account} and/or {.arg server}."
+      ))
+    }
+    list(id = recs$appId[[1L]])
+  } else {
+    resolveApplication(accountDetails, appName %||% basename(appDir))
+  }
+}
+
 #' Add authorized user to application
 #'
 #' @description
@@ -84,11 +116,7 @@ addAuthorizedUser <- function(
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
 
-  # resolve application
-  if (is.null(appName)) {
-    appName <- basename(appDir)
-  }
-  application <- resolveApplication(accountDetails, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName)
 
   # check for and remove password file
   cleanupPasswordFile(appDir)
@@ -148,11 +176,7 @@ removeAuthorizedUser <- function(
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
 
-  # resolve application
-  if (is.null(appName)) {
-    appName <- basename(appDir)
-  }
-  application <- resolveApplication(accountDetails, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName)
 
   # check and remove password file
   cleanupPasswordFile(appDir)
@@ -217,11 +241,7 @@ showUsers <- function(
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
 
-  # resolve application
-  if (is.null(appName)) {
-    appName <- basename(appDir)
-  }
-  application <- resolveApplication(accountDetails, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName)
 
   # fetch authorization list
   api <- clientForAccount(accountDetails)
@@ -284,11 +304,7 @@ showInvited <- function(
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
 
-  # resolve application
-  if (is.null(appName)) {
-    appName <- basename(appDir)
-  }
-  application <- resolveApplication(accountDetails, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName)
 
   # fetch invitation list
   api <- clientForAccount(accountDetails)

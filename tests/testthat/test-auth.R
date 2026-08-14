@@ -3,11 +3,17 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationAuthorization = function(appId) {
         list(
           list(user = list(id = "user-uuid-1", email = "alice@example.com")),
@@ -18,7 +24,7 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
   })
 
   expect_warning(
-    result <- showUsers(appName = "myapp", account = "myaccount",
+    result <- showUsers(appDir = app_dir, account = "myaccount",
                         server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
@@ -32,12 +38,18 @@ test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUse
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   removed_user_id <- NULL
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationAuthorization = function(appId) {
         list(list(user = list(id = "user-uuid-1", email = "alice@example.com")))
       },
@@ -49,7 +61,7 @@ test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUse
   })
 
   expect_warning(
-    removeAuthorizedUser("alice@example.com", appName = "myapp",
+    removeAuthorizedUser("alice@example.com", appDir = app_dir,
                           account = "myaccount", server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
@@ -61,17 +73,23 @@ test_that("showUsers returns empty data frame with correct columns when no users
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationAuthorization = function(appId) list()
     )
   })
 
   expect_warning(
-    result <- showUsers(appName = "myapp", account = "myaccount",
+    result <- showUsers(appDir = app_dir, account = "myaccount",
                         server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
@@ -85,12 +103,18 @@ test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser o
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   invited <- list()
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       inviteApplicationUser = function(appId, email, sendEmail, emailMessage) {
         invited[[length(invited) + 1]] <<- list(appId = appId, email = email)
         invisible(TRUE)
@@ -99,7 +123,7 @@ test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser o
   })
 
   expect_warning(
-    addAuthorizedUser("alice@example.com", appName = "myapp",
+    addAuthorizedUser("alice@example.com", appDir = app_dir,
                       account = "myaccount", server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
@@ -112,11 +136,17 @@ test_that("showInvited emits deprecation and maps PCC email_address/is_expired f
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationInvitations = function(appId) {
         list(list(
           id = "invite-uuid-1",
@@ -128,7 +158,7 @@ test_that("showInvited emits deprecation and maps PCC email_address/is_expired f
   })
 
   expect_warning(
-    result <- showInvited(appName = "myapp", account = "myaccount",
+    result <- showInvited(appDir = app_dir, account = "myaccount",
                           server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
@@ -142,11 +172,17 @@ test_that("addAuthorizedUser warns when sendEmail is non-NULL on PCC", {
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       inviteApplicationUser = function(appId, email, sendEmail, emailMessage) {
         invisible(TRUE)
       }
@@ -157,7 +193,7 @@ test_that("addAuthorizedUser warns when sendEmail is non-NULL on PCC", {
   withCallingHandlers(
     addAuthorizedUser(
       "alice@example.com",
-      appName = "myapp",
+      appDir = app_dir,
       account = "myaccount",
       server = "connect.posit.cloud",
       sendEmail = FALSE
@@ -176,11 +212,17 @@ test_that("showInvited returns NA for invitation records missing email and expir
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationInvitations = function(appId) {
         # record with neither email_address/email nor is_expired/expired
         list(list(id = "invite-uuid-missing"))
@@ -190,7 +232,7 @@ test_that("showInvited returns NA for invitation records missing email and expir
 
   expect_warning(
     result <- showInvited(
-      appName = "myapp",
+      appDir = app_dir,
       account = "myaccount",
       server = "connect.posit.cloud"
     ),
@@ -207,11 +249,17 @@ test_that("showUsers returns NA for user records with absent id and email fields
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationAuthorization = function(appId) {
         # record with no user$id or user$email fields
         list(list(user = list()))
@@ -221,7 +269,7 @@ test_that("showUsers returns NA for user records with absent id and email fields
 
   expect_warning(
     result <- showUsers(
-      appName = "myapp",
+      appDir = app_dir,
       account = "myaccount",
       server = "connect.posit.cloud"
     ),
@@ -260,12 +308,18 @@ test_that("resendInvitation emits deprecation and calls resendApplicationInvitat
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
   resent_id <- NULL
   local_mocked_bindings(clientForAccount = function(...) {
     list(
-      listApplications = function(accountId, ...) {
-        list(list(name = "myapp", id = "content-uuid-123"))
-      },
       listApplicationInvitations = function(appId) {
         list(list(
           id = "invite-uuid-1",
@@ -281,9 +335,81 @@ test_that("resendInvitation emits deprecation and calls resendApplicationInvitat
   })
 
   expect_warning(
-    resendInvitation("alice@example.com", appName = "myapp",
+    resendInvitation("alice@example.com", appDir = app_dir,
                      account = "myaccount", server = "connect.posit.cloud"),
     regexp = "deprecated"
   )
   expect_equal(resent_id, "invite-uuid-1")
+})
+
+test_that("resolveContentTarget uses deployment-record appId on PCC, not title", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "my-content",
+    appId = "content-uuid-abc",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  captured_app_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        captured_app_id <<- appId
+        list()
+      }
+    )
+  })
+
+  expect_warning(
+    showUsers(appDir = app_dir, account = "myaccount", server = "connect.posit.cloud"),
+    regexp = "deprecated"
+  )
+  expect_equal(captured_app_id, "content-uuid-abc")
+})
+
+test_that("resolveContentTarget aborts with clear message on PCC when no deployment record", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  # No addTestDeployment — no record exists
+
+  expect_error(
+    suppressWarnings(
+      showUsers(appDir = app_dir, account = "myaccount", server = "connect.posit.cloud")
+    ),
+    regexp = "No deployment record found"
+  )
+})
+
+test_that("resolveContentTarget delegates to resolveApplication on shinyapps.io", {
+  local_temp_config()
+  addTestServer(url = "https://shinyapps.io", name = "shinyapps.io")
+  addTestAccount("myaccount", server = "shinyapps.io")
+
+  captured_app_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = 42L))
+      },
+      listApplicationAuthorization = function(appId) {
+        captured_app_id <<- appId
+        list()
+      }
+    )
+  })
+
+  expect_warning(
+    showUsers(appName = "myapp", account = "myaccount", server = "shinyapps.io"),
+    regexp = "deprecated"
+  )
+  expect_equal(captured_app_id, 42L)
 })
