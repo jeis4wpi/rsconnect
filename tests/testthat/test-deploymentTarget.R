@@ -472,6 +472,39 @@ test_that("can find existing application on shinyapps.io & not use it", {
   confirm_existing_app_not_used("shinyapps.io")
 })
 
+test_that("PCC deploy with no local record creates new content, not adopting same-titled existing", {
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  # getAppByName and shouldUpdateApp are mocked to prove they are NOT called on PCC:
+  # if the guard were absent, shouldUpdateApp = TRUE would produce appId = "existing-uuid-123"
+  # and the expect_null assertion below would fail.
+  local_mocked_bindings(
+    getAppByName = function(...) {
+      data.frame(
+        name = "my_app",
+        id = "existing-uuid-123",
+        url = "https://connect.posit.cloud/myaccount/content/existing-uuid-123",
+        stringsAsFactors = FALSE
+      )
+    },
+    shouldUpdateApp = function(...) TRUE
+  )
+
+  app_dir <- dirCreate(file.path(withr::local_tempdir(), "my_app"))
+
+  target <- findDeploymentTarget(
+    app_dir,
+    appName = "my_app",
+    account = "myaccount",
+    server = "connect.posit.cloud",
+    forceUpdate = TRUE
+  )
+  # Guard skips getAppByName on PCC; falls through to createDeployment(appId = NULL)
+  expect_null(target$deployment$appId)
+})
+
 # helpers -----------------------------------------------------------------
 
 test_that("shouldUpdateApp errors when non-interactive", {
