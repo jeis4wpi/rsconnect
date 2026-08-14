@@ -191,10 +191,10 @@ connectCloudClient <- function(service, authInfo) {
       items <- lapply(allItems, function(item) { item$name <- item$title; item })
       # Honor filters$name with exact-match semantics to match the shinyapps.io
       # client contract (listApplications callers may pass filters$name).
-      # NOTE: no current PCC deploy path reaches this block — deploy adoption is
-      # gated off in findDeploymentTargetByAppName, and resolveApplication lists
-      # without filters — but removing it would silently break the contract for
-      # any future caller that does pass filters$name.
+      # NOTE: getAppByName()/getLogs() historically reached this block; getLogs()
+      # is now guarded with checkShinyappsServer() so PCC callers never reach it.
+      # The block is kept for listApplications contract parity with shinyapps.io:
+      # removing it would silently break any future caller that passes filters$name.
       if (!is.null(filters$name)) {
         items <- Filter(function(item) identical(item$name, filters$name), items)
       }

@@ -9,6 +9,56 @@ collaboratorDeprecationDetails <- function(server) {
   }
 }
 
+# Internal: fetch authorized users for an already-resolved application id.
+# Does NOT call resolveContentTarget() or emit deprecate_warn(); callers are
+# responsible for resolving content exactly once before invoking this.
+showUsers_impl <- function(api, applicationId) {
+  res <- api$listApplicationAuthorization(applicationId)
+  rows <- lapply(res, function(x) {
+    data.frame(
+      id      = as.character(x$user$id %||% NA_character_),
+      email   = as.character(x$user$email %||% NA_character_),
+      account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0L) {
+    return(data.frame(
+      id      = character(),
+      email   = character(),
+      account = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
+# Internal: fetch pending invitations for an already-resolved application id.
+# Does NOT call resolveContentTarget() or emit deprecate_warn().
+showInvited_impl <- function(api, applicationId) {
+  res <- api$listApplicationInvitations(applicationId)
+  # PCC uses email_address / is_expired; shinyapps.io uses email / expired.
+  rows <- lapply(res, function(x) {
+    data.frame(
+      id      = as.character(x$id %||% NA_character_),
+      email   = as.character(x$email_address %||% x$email %||% NA_character_),
+      link    = as.character(x$link %||% NA_character_),
+      expired = as.logical(x$is_expired %||% x$expired %||% NA),
+      stringsAsFactors = FALSE
+    )
+  })
+  if (length(rows) == 0L) {
+    return(data.frame(
+      id      = character(),
+      email   = character(),
+      link    = character(),
+      expired = logical(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  do.call(rbind, rows)
+}
+
 cleanupPasswordFile <- function(appDir) {
   check_directory(appDir)
   appDir <- normalizePath(appDir)
@@ -190,8 +240,13 @@ removeAuthorizedUser <- function(
   # check and remove password file
   cleanupPasswordFile(appDir)
 
-  # get users
-  users <- showUsers(appDir, appName, account, server)
+  # resolve content exactly once: use impl so showUsers() does not call
+  # resolveContentTarget() a second time (a second interactive prompt could
+  # return a different record, causing removeApplicationUser to act on the
+  # wrong content). This supersedes the plan's accepted double-deprecation
+  # note — the root issue is a correctness bug, not just warning noise.
+  api <- clientForAccount(accountDetails)
+  users <- showUsers_impl(api, application$id)
 
   if (is.numeric(user)) {
     # lookup by id
@@ -209,8 +264,7 @@ removeAuthorizedUser <- function(
     }
   }
 
-  # remove user
-  api <- clientForAccount(accountDetails)
+  # remove user (api already built above)
   api$removeApplicationUser(application$id, user$id)
 
   message(paste("Removed:", user$email, "from application", sep = " "))
@@ -257,30 +311,8 @@ showUsers <- function(
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
-  # fetch authorization list
   api <- clientForAccount(accountDetails)
-  res <- api$listApplicationAuthorization(application$id)
-
-  # get interesting fields; build rows as data.frames so rbind yields atomic
-  # columns (do.call(rbind, list_of_lists) produces list-matrix columns).
-  rows <- lapply(res, function(x) {
-    data.frame(
-      id      = as.character(x$user$id %||% NA_character_),
-      email   = as.character(x$user$email %||% NA_character_),
-      account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
-      stringsAsFactors = FALSE
-    )
-  })
-
-  if (length(rows) == 0L) {
-    return(data.frame(
-      id      = character(),
-      email   = character(),
-      account = character(),
-      stringsAsFactors = FALSE
-    ))
-  }
-  do.call(rbind, rows)
+  showUsers_impl(api, application$id)
 }
 
 #' List invited users for an application
@@ -325,33 +357,8 @@ showInvited <- function(
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
-  # fetch invitation list
   api <- clientForAccount(accountDetails)
-  res <- api$listApplicationInvitations(application$id)
-
-  # get interesting fields; PCC uses email_address / is_expired; shinyapps uses email / expired.
-  # Build rows as data.frames so rbind yields atomic columns (do.call(rbind, list_of_lists)
-  # produces list-matrix columns).
-  rows <- lapply(res, function(x) {
-    data.frame(
-      id      = as.character(x$id %||% NA_character_),
-      email   = as.character(x$email_address %||% x$email %||% NA_character_),
-      link    = as.character(x$link %||% NA_character_),
-      expired = as.logical(x$is_expired %||% x$expired %||% NA),
-      stringsAsFactors = FALSE
-    )
-  })
-
-  if (length(rows) == 0L) {
-    return(data.frame(
-      id      = character(),
-      email   = character(),
-      link    = character(),
-      expired = logical(),
-      stringsAsFactors = FALSE
-    ))
-  }
-  do.call(rbind, rows)
+  showInvited_impl(api, application$id)
 }
 
 #' Resend invitation for invited users of an application
@@ -393,8 +400,11 @@ resendInvitation <- function(
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
 
-  # get invitations
-  invited <- showInvited(appDir, appName, account, server)
+  # resolve content exactly once, then fetch invitations via impl (avoids a
+  # second resolveContentTarget() call and a second deprecate_warn()).
+  application <- resolveContentTarget(accountDetails, appDir, appName)
+  api <- clientForAccount(accountDetails)
+  invited <- showInvited_impl(api, application$id)
 
   if (is.numeric(invite)) {
     # lookup by id
@@ -412,8 +422,7 @@ resendInvitation <- function(
     }
   }
 
-  # resend invitation
-  api <- clientForAccount(accountDetails)
+  # resend invitation (api already built above)
   api$resendApplicationInvitation(invite$id, regenerate)
 
   message(paste("Sent invitation to", invite$email, "", sep = " "))

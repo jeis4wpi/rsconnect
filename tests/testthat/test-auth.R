@@ -482,3 +482,60 @@ test_that("resolveContentTarget delegates to resolveApplication on shinyapps.io"
   )
   expect_equal(captured_app_id, 42L)
 })
+
+test_that("removeAuthorizedUser resolves content target exactly once (no double prompt)", {
+  # Regression test for double resolveContentTarget() via public showUsers().
+  # Before the fix, removeAuthorizedUser() called resolveContentTarget() and
+  # then showUsers() called it again — two independent prompts on multi-record
+  # appDir, potentially acting on different content. After the fix, clientForAccount
+  # is built once and showUsers_impl() is called directly with the resolved id.
+  local_temp_config()
+  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "a",
+    appId = "content-uuid-aaa",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+  addTestDeployment(
+    app_dir,
+    appName = "b",
+    appId = "content-uuid-bbb",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  client_build_count <- 0L
+  removed_app_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    client_build_count <<- client_build_count + 1L
+    list(
+      listApplicationAuthorization = function(appId) {
+        list(list(user = list(id = "user-uuid-1", email = "alice@example.com")))
+      },
+      removeApplicationUser = function(appId, userId) {
+        removed_app_id <<- appId
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    removeAuthorizedUser(
+      "alice@example.com",
+      appDir = app_dir,
+      appName = "b",
+      account = "myaccount",
+      server = "connect.posit.cloud"
+    ),
+    regexp = "deprecated"
+  )
+  # clientForAccount built exactly once → content resolved exactly once
+  expect_equal(client_build_count, 1L)
+  # removeApplicationUser called with "b"'s appId, not "a"'s
+  expect_equal(removed_app_id, "content-uuid-bbb")
+})

@@ -1,5 +1,12 @@
 # rsconnect (development version)
 
+* `showUsers()` and `showInvited()` now return data frames with atomic
+  `character` and `logical` columns on all backends. Previously the
+  shinyapps.io path used `do.call(rbind, list_of_lists)` on list-of-lists,
+  which produced list-matrix columns. User ids are now always `character`
+  (previously numeric on shinyapps.io); an empty result is a typed 0-row data
+  frame with named columns rather than `NULL`.
+
 * `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
   `showInvited()`, and `resendInvitation()` are now soft-deprecated. Callers
   will see a deprecation warning with a link to the appropriate web interface

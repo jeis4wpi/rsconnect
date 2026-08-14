@@ -327,6 +327,7 @@ getLogs <- function(
     server = server,
     account = account
   )
+  checkShinyappsServer(deployment$server)
   accountDetails <- accountInfo(deployment$account, deployment$server)
   client <- clientForAccount(accountDetails)
   application <- getAppByName(client, accountDetails, deployment$name)
