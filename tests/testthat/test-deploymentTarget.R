@@ -477,9 +477,10 @@ test_that("PCC deploy with no local record creates new content, not adopting sam
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
-  # getAppByName and shouldUpdateApp are mocked to prove they are NOT called on PCC:
-  # if the guard were absent, shouldUpdateApp = TRUE would produce appId = "existing-uuid-123"
-  # and the expect_null assertion below would fail.
+  # getAppByName is mocked to prove it is NOT called on PCC.
+  # Without the guard, getAppByName would return the existing app and forceUpdate = TRUE
+  # would adopt it (appId = "existing-uuid-123"). With the guard, getAppByName is
+  # never reached → falls through to create-new → appId = NULL.
   local_mocked_bindings(
     getAppByName = function(...) {
       data.frame(
@@ -488,8 +489,7 @@ test_that("PCC deploy with no local record creates new content, not adopting sam
         url = "https://connect.posit.cloud/myaccount/content/existing-uuid-123",
         stringsAsFactors = FALSE
       )
-    },
-    shouldUpdateApp = function(...) TRUE
+    }
   )
 
   app_dir <- dirCreate(file.path(withr::local_tempdir(), "my_app"))
@@ -503,6 +503,7 @@ test_that("PCC deploy with no local record creates new content, not adopting sam
   )
   # Guard skips getAppByName on PCC; falls through to createDeployment(appId = NULL)
   expect_null(target$deployment$appId)
+  expect_equal(target$deployment$name, "my_app")
 })
 
 # helpers -----------------------------------------------------------------

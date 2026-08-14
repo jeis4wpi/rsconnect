@@ -189,7 +189,12 @@ connectCloudClient <- function(service, authInfo) {
       }
       # Set name = title so resolveApplication (which matches on app$name) works for PCC.
       items <- lapply(allItems, function(item) { item$name <- item$title; item })
-      # Honor filters$name with exact-match semantics (mirrors shinyapps.io contract).
+      # Honor filters$name with exact-match semantics to match the shinyapps.io
+      # client contract (listApplications callers may pass filters$name).
+      # NOTE: no current PCC deploy path reaches this block — deploy adoption is
+      # gated off in findDeploymentTargetByAppName, and resolveApplication lists
+      # without filters — but removing it would silently break the contract for
+      # any future caller that does pass filters$name.
       if (!is.null(filters$name)) {
         items <- Filter(function(item) identical(item$name, filters$name), items)
       }
