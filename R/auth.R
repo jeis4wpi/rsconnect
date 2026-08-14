@@ -15,9 +15,19 @@ collaboratorDeprecationDetails <- function(server) {
 showUsers_impl <- function(api, applicationId) {
   res <- api$listApplicationAuthorization(applicationId)
   rows <- lapply(res, function(x) {
+    id    <- as.character(x$user$id    %||% NA_character_)
+    email <- as.character(x$user$email %||% NA_character_)
+    if (is.na(id) && is.na(email)) {
+      cli::cli_abort(
+        c(
+          "Unexpected response from Connect Cloud: a user record has neither an {.field id} nor an {.field email}.",
+          i = "The response shape may have changed; contact Posit support if this persists."
+        )
+      )
+    }
     data.frame(
-      id      = as.character(x$user$id %||% NA_character_),
-      email   = as.character(x$user$email %||% NA_character_),
+      id      = id,
+      email   = email,
       account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
       stringsAsFactors = FALSE
     )

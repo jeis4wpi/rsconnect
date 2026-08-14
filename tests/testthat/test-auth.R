@@ -244,7 +244,7 @@ test_that("showInvited returns NA for invitation records missing email and expir
   expect_true(is.na(result$expired))
 })
 
-test_that("showUsers returns NA for user records with absent id and email fields", {
+test_that("showUsers aborts with a clear message when a user record has neither id nor email", {
   local_temp_config()
   addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
   addTestAccount("myaccount", server = "connect.posit.cloud")
@@ -261,24 +261,24 @@ test_that("showUsers returns NA for user records with absent id and email fields
   local_mocked_bindings(clientForAccount = function(...) {
     list(
       listApplicationAuthorization = function(appId) {
-        # record with no user$id or user$email fields
+        # record with no user$id or user$email fields — unexpected shape
         list(list(user = list()))
       }
     )
   })
 
+  # The deprecation warn fires first; the abort follows inside showUsers_impl.
   expect_warning(
-    result <- showUsers(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
+    expect_error(
+      showUsers(
+        appDir = app_dir,
+        account = "myaccount",
+        server = "connect.posit.cloud"
+      ),
+      regexp = "Unexpected response from Connect Cloud"
     ),
     regexp = "deprecated"
   )
-  expect_s3_class(result, "data.frame")
-  expect_equal(nrow(result), 1L)
-  expect_true(is.na(result$id))
-  expect_true(is.na(result$email))
 })
 
 test_that("showUsers errors on non-shinyapps non-PCC server without emitting deprecation", {

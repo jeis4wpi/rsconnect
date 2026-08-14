@@ -711,7 +711,8 @@ test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/in
     has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
     has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
     has_recv_inv <- is.list(j$recipient_invitations)
-    if (has_email_inv && has_addr && has_recv_inv) {
+    has_message <- identical(j$message, "Welcome!")
+    if (has_email_inv && has_addr && has_recv_inv && has_message) {
       res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
     } else {
       res$set_status(400L)$send_json(list(error = "unexpected body shape"), auto_unbox = TRUE)
@@ -733,6 +734,44 @@ test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/in
   result <- client$inviteApplicationUser(
     "content-abc", "alice@example.com", TRUE, "Welcome!"
   )
+  expect_true(result)
+})
+
+test_that("inviteApplicationUser sends null message field when emailMessage is NULL", {
+  skip_if_not_installed("webfakes")
+
+  null_msg_app <- webfakes::new_app()
+  null_msg_app$use(webfakes::mw_json())
+  null_msg_app$post("/contents/:id/invitations", function(req, res) {
+    j <- req$json
+    # toJSON(list(message = NULL), null = "null") renders {"message":null,...};
+    # jsonlite parses null back to NULL, so is.null(j$message) must be TRUE.
+    has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
+    has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
+    has_null_msg <- is.null(j$message)
+    if (has_email_inv && has_addr && has_null_msg) {
+      res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
+    } else {
+      res$set_status(400L)$send_json(
+        list(error = "expected null message field"),
+        auto_unbox = TRUE
+      )
+    }
+  })
+  app <- webfakes::new_app_process(null_msg_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  result <- client$inviteApplicationUser("content-abc", "alice@example.com", TRUE, NULL)
   expect_true(result)
 })
 

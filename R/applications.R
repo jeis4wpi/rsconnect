@@ -59,21 +59,36 @@ applications <- function(account = NULL, server = NULL) {
       stringsAsFactors = FALSE
     )
     if (length(apps) == 0) return(empty)
+    # Resolve the owning account's real server-side slug once. All items belong
+    # to accountDetails$accountId (listApplications filters by it), so one
+    # getAccounts() call covers every row. Using the resolved slug rather than
+    # accountDetails$name (the local alias) prevents wrong-account URLs when the
+    # remote slug differs from the alias stored in the local config.
+    pccAccts <- client$getAccounts()$data
+    pccOwner <- Find(function(a) identical(a$id, accountDetails$accountId), pccAccts)
+    if (is.null(pccOwner)) {
+      cli::cli_abort(
+        c(
+          "Unable to determine the Connect Cloud account for content listing.",
+          i = "You may not have access to the account this content belongs to."
+        )
+      )
+    }
+    contentUrlBase <- paste0(connectCloudUrls()$ui, "/", pccOwner$name, "/content/")
     res <- lapply(apps, function(x) {
+      # On PCC the content list response does not expose a separately served-app
+      # URL; the browsable content URL is the best available and is used for both
+      # url and config_url.
+      contentUrl <- paste0(contentUrlBase, x$id %||% "")
       data.frame(
         id = x$id %||% NA_character_,
         name = x$title %||% NA_character_,
         title = x$title %||% NA_character_,
-        url = x$current_revision$url %||% NA_character_,
+        url = contentUrl,
         status = NA_character_,
         size = NA_character_,
         instances = NA_integer_,
-        # accountDetails$name is the authenticated caller's account, which matches
-        # the account_id filter passed to listApplications — content listed here
-        # always belongs to this account, so this URL is correct.
-        config_url = paste0(
-          connectCloudUrls()$ui, "/", accountDetails$name, "/content/", x$id %||% ""
-        ),
+        config_url = contentUrl,
         created_time = x$created_time %||% NA_character_,
         updated_time = x$updated_time %||% NA_character_,
         guid = NA_character_,
