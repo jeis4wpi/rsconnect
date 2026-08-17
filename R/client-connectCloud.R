@@ -173,22 +173,30 @@ connectCloudClient <- function(service, authInfo) {
       allItems <- list()
       repeat {
         path <- paste0(
-          "/contents?account_id=", accountId,
-          "&include_total=true&limit=", pageSize,
-          "&offset=", offset
+          "/contents?account_id=",
+          accountId,
+          "&include_total=true&limit=",
+          pageSize,
+          "&offset=",
+          offset
         )
         response <- withTokenRefreshRetry(GET, path)
         allItems <- c(allItems, response$data)
         offset <- offset + length(response$data)
         total <- as.numeric(response$total)
-        if (length(response$data) == 0 ||
+        if (
+          length(response$data) == 0 ||
             isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)) {
+            (length(total) == 0L && length(response$data) < pageSize)
+        ) {
           break
         }
       }
       # Set name = title so resolveApplication (which matches on app$name) works for PCC.
-      items <- lapply(allItems, function(item) { item$name <- item$title; item })
+      items <- lapply(allItems, function(item) {
+        item$name <- item$title
+        item
+      })
       # Honor filters$name with exact-match semantics to match the shinyapps.io
       # client contract (listApplications callers may pass filters$name).
       # NOTE: getAppByName()/getLogs() historically reached this block; getLogs()
@@ -196,7 +204,10 @@ connectCloudClient <- function(service, authInfo) {
       # The block is kept for listApplications contract parity with shinyapps.io:
       # removing it would silently break any future caller that passes filters$name.
       if (!is.null(filters$name)) {
-        items <- Filter(function(item) identical(item$name, filters$name), items)
+        items <- Filter(
+          function(item) identical(item$name, filters$name),
+          items
+        )
       }
       items
     },
@@ -453,17 +464,23 @@ connectCloudClient <- function(service, authInfo) {
       allItems <- list()
       repeat {
         path <- paste0(
-          "/contents/", appId, "/users",
-          "?include_total=true&limit=", pageSize,
-          "&offset=", offset
+          "/contents/",
+          appId,
+          "/users",
+          "?include_total=true&limit=",
+          pageSize,
+          "&offset=",
+          offset
         )
         response <- withTokenRefreshRetry(GET, path)
         allItems <- c(allItems, response$data)
         offset <- offset + length(response$data)
         total <- as.numeric(response$total)
-        if (length(response$data) == 0 ||
+        if (
+          length(response$data) == 0 ||
             isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)) {
+            (length(total) == 0L && length(response$data) < pageSize)
+        ) {
           break
         }
       }
@@ -493,17 +510,23 @@ connectCloudClient <- function(service, authInfo) {
       allItems <- list()
       repeat {
         path <- paste0(
-          "/contents/", appId, "/invitations",
-          "?accepted_time__isnull=true&include_total=true&limit=", pageSize,
-          "&offset=", offset
+          "/contents/",
+          appId,
+          "/invitations",
+          "?accepted_time__isnull=true&include_total=true&limit=",
+          pageSize,
+          "&offset=",
+          offset
         )
         response <- withTokenRefreshRetry(GET, path)
         allItems <- c(allItems, response$data)
         offset <- offset + length(response$data)
         total <- as.numeric(response$total)
-        if (length(response$data) == 0 ||
+        if (
+          length(response$data) == 0 ||
             isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)) {
+            (length(total) == 0L && length(response$data) < pageSize)
+        ) {
           break
         }
       }

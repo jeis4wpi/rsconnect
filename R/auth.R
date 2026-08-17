@@ -1,11 +1,17 @@
 # Internal: deprecation remediation text varies by backend.
 collaboratorDeprecationDetails <- function(server) {
   if (isPositConnectCloudServer(server)) {
-    paste0("Manage collaborators directly in Posit Connect Cloud at ",
-           "<", connectCloudUrls()$ui, ">.")
+    paste0(
+      "Manage collaborators directly in Posit Connect Cloud at ",
+      "<",
+      connectCloudUrls()$ui,
+      ">."
+    )
   } else {
-    paste0("Manage collaborators directly in shinyapps.io at ",
-           "<https://www.shinyapps.io>.")
+    paste0(
+      "Manage collaborators directly in shinyapps.io at ",
+      "<https://www.shinyapps.io>."
+    )
   }
 }
 
@@ -15,7 +21,7 @@ collaboratorDeprecationDetails <- function(server) {
 showUsers_impl <- function(api, applicationId) {
   res <- api$listApplicationAuthorization(applicationId)
   rows <- lapply(res, function(x) {
-    id    <- as.character(x$user$id    %||% NA_character_)
+    id <- as.character(x$user$id %||% NA_character_)
     email <- as.character(x$user$email %||% NA_character_)
     if (is.na(id) && is.na(email)) {
       cli::cli_abort(
@@ -26,16 +32,20 @@ showUsers_impl <- function(api, applicationId) {
       )
     }
     data.frame(
-      id      = id,
-      email   = email,
-      account = if (!is.null(x$account)) as.character(x$account) else NA_character_,
+      id = id,
+      email = email,
+      account = if (!is.null(x$account)) {
+        as.character(x$account)
+      } else {
+        NA_character_
+      },
       stringsAsFactors = FALSE
     )
   })
   if (length(rows) == 0L) {
     return(data.frame(
-      id      = character(),
-      email   = character(),
+      id = character(),
+      email = character(),
       account = character(),
       stringsAsFactors = FALSE
     ))
@@ -50,18 +60,18 @@ showInvited_impl <- function(api, applicationId) {
   # PCC uses email_address / is_expired; shinyapps.io uses email / expired.
   rows <- lapply(res, function(x) {
     data.frame(
-      id      = as.character(x$id %||% NA_character_),
-      email   = as.character(x$email_address %||% x$email %||% NA_character_),
-      link    = as.character(x$link %||% NA_character_),
+      id = as.character(x$id %||% NA_character_),
+      email = as.character(x$email_address %||% x$email %||% NA_character_),
+      link = as.character(x$link %||% NA_character_),
       expired = as.logical(x$is_expired %||% x$expired %||% NA),
       stringsAsFactors = FALSE
     )
   })
   if (length(rows) == 0L) {
     return(data.frame(
-      id      = character(),
-      email   = character(),
-      link    = character(),
+      id = character(),
+      email = character(),
+      link = character(),
       expired = logical(),
       stringsAsFactors = FALSE
     ))
@@ -188,7 +198,10 @@ addAuthorizedUser <- function(
   }
 
   # PCC always emails invitees; warn only when caller explicitly opts out
-  if (isPositConnectCloudServer(accountDetails$server) && identical(sendEmail, FALSE)) {
+  if (
+    isPositConnectCloudServer(accountDetails$server) &&
+      identical(sendEmail, FALSE)
+  ) {
     cli::cli_warn(
       "{.arg sendEmail} is ignored on Posit Connect Cloud; PCC always sends an invitation email."
     )

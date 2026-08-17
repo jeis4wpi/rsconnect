@@ -51,21 +51,32 @@ applications <- function(account = NULL, server = NULL) {
 
   if (isPCC) {
     empty <- data.frame(
-      id = character(), name = character(), title = character(),
-      url = character(), status = character(), size = character(),
-      instances = integer(), config_url = character(),
-      created_time = character(), updated_time = character(),
+      id = character(),
+      name = character(),
+      title = character(),
+      url = character(),
+      status = character(),
+      size = character(),
+      instances = integer(),
+      config_url = character(),
+      created_time = character(),
+      updated_time = character(),
       guid = character(),
       stringsAsFactors = FALSE
     )
-    if (length(apps) == 0) return(empty)
+    if (length(apps) == 0) {
+      return(empty)
+    }
     # Resolve the owning account's real server-side slug once. All items belong
     # to accountDetails$accountId (listApplications filters by it), so one
     # getAccounts() call covers every row. Using the resolved slug rather than
     # accountDetails$name (the local alias) prevents wrong-account URLs when the
     # remote slug differs from the alias stored in the local config.
     pccAccts <- client$getAccounts()$data
-    pccOwner <- Find(function(a) identical(a$id, accountDetails$accountId), pccAccts)
+    pccOwner <- Find(
+      function(a) identical(a$id, accountDetails$accountId),
+      pccAccts
+    )
     if (is.null(pccOwner)) {
       cli::cli_abort(
         c(
@@ -74,7 +85,12 @@ applications <- function(account = NULL, server = NULL) {
         )
       )
     }
-    contentUrlBase <- paste0(connectCloudUrls()$ui, "/", pccOwner$name, "/content/")
+    contentUrlBase <- paste0(
+      connectCloudUrls()$ui,
+      "/",
+      pccOwner$name,
+      "/content/"
+    )
     res <- lapply(apps, function(x) {
       # On PCC the content list response does not expose a separately served-app
       # URL; the browsable content URL is the best available and is used for both

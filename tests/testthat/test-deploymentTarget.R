@@ -474,7 +474,10 @@ test_that("can find existing application on shinyapps.io & not use it", {
 
 test_that("PCC deploy with no local record creates new content, not adopting same-titled existing", {
   local_temp_config()
-  addTestServer(url = "https://connect.posit.cloud", name = "connect.posit.cloud")
+  addTestServer(
+    url = "https://connect.posit.cloud",
+    name = "connect.posit.cloud"
+  )
   addTestAccount("myaccount", server = "connect.posit.cloud")
 
   # getAppByName is mocked to prove it is NOT called on PCC.

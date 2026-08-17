@@ -648,8 +648,14 @@ test_that("listApplicationAuthorization GETs /contents/{id}/users and returns pa
     res$set_status(200L)$send_json(
       list(
         data = list(
-          list(user = list(id = "user-uuid-1", email = "alice@example.com"), account = "acct-a"),
-          list(user = list(id = "user-uuid-2", email = "bob@example.com"),   account = "acct-b")
+          list(
+            user = list(id = "user-uuid-1", email = "alice@example.com"),
+            account = "acct-a"
+          ),
+          list(
+            user = list(id = "user-uuid-2", email = "bob@example.com"),
+            account = "acct-b"
+          )
         )
       ),
       auto_unbox = TRUE
@@ -672,7 +678,7 @@ test_that("listApplicationAuthorization GETs /contents/{id}/users and returns pa
   expect_equal(length(result), 2L)
   expect_equal(result[[1]]$user$email, "alice@example.com")
   expect_equal(result[[2]]$user$email, "bob@example.com")
-  expect_equal(result[[1]]$user$id,    "user-uuid-1")
+  expect_equal(result[[1]]$user$id, "user-uuid-1")
 })
 
 test_that("removeApplicationUser DELETEs /contents/{id}/users/{userId} and returns TRUE", {
@@ -708,14 +714,21 @@ test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/in
   invite_app$post("/contents/:id/invitations", function(req, res) {
     j <- req$json
     # Validate required payload shape; 400 forces a client error if the body is wrong
-    has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
-    has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
+    has_email_inv <- is.list(j$email_invitations) &&
+      length(j$email_invitations) >= 1L
+    has_addr <- identical(
+      j$email_invitations[[1]]$email_address,
+      "alice@example.com"
+    )
     has_recv_inv <- is.list(j$recipient_invitations)
     has_message <- identical(j$message, "Welcome!")
     if (has_email_inv && has_addr && has_recv_inv && has_message) {
       res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
     } else {
-      res$set_status(400L)$send_json(list(error = "unexpected body shape"), auto_unbox = TRUE)
+      res$set_status(400L)$send_json(
+        list(error = "unexpected body shape"),
+        auto_unbox = TRUE
+      )
     }
   })
   app <- webfakes::new_app_process(invite_app)
@@ -732,7 +745,10 @@ test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/in
   client <- connectCloudClient(service, authInfo)
 
   result <- client$inviteApplicationUser(
-    "content-abc", "alice@example.com", TRUE, "Welcome!"
+    "content-abc",
+    "alice@example.com",
+    TRUE,
+    "Welcome!"
   )
   expect_true(result)
 })
@@ -746,8 +762,12 @@ test_that("inviteApplicationUser sends null message field when emailMessage is N
     j <- req$json
     # toJSON(list(message = NULL), null = "null") renders {"message":null,...};
     # jsonlite parses null back to NULL, so is.null(j$message) must be TRUE.
-    has_email_inv <- is.list(j$email_invitations) && length(j$email_invitations) >= 1L
-    has_addr <- identical(j$email_invitations[[1]]$email_address, "alice@example.com")
+    has_email_inv <- is.list(j$email_invitations) &&
+      length(j$email_invitations) >= 1L
+    has_addr <- identical(
+      j$email_invitations[[1]]$email_address,
+      "alice@example.com"
+    )
     has_null_msg <- is.null(j$message) && "message" %in% names(j)
     if (has_email_inv && has_addr && has_null_msg) {
       res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
@@ -771,7 +791,12 @@ test_that("inviteApplicationUser sends null message field when emailMessage is N
   )
   client <- connectCloudClient(service, authInfo)
 
-  result <- client$inviteApplicationUser("content-abc", "alice@example.com", TRUE, NULL)
+  result <- client$inviteApplicationUser(
+    "content-abc",
+    "alice@example.com",
+    TRUE,
+    NULL
+  )
   expect_true(result)
 })
 
@@ -786,7 +811,11 @@ test_that("listApplicationInvitations GETs /contents/{id}/invitations?accepted_t
       res$set_status(200L)$send_json(
         list(
           data = list(
-            list(id = "inv-1", email_address = "bob@example.com", is_expired = FALSE)
+            list(
+              id = "inv-1",
+              email_address = "bob@example.com",
+              is_expired = FALSE
+            )
           )
         ),
         auto_unbox = TRUE
@@ -885,8 +914,12 @@ test_that("listApplicationAuthorization accumulates multiple pages", {
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
-    server = "connect.posit.cloud", name = "some-user", username = "some-user",
-    accountId = "123", accessToken = "tok", refreshToken = "ref"
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "tok",
+    refreshToken = "ref"
   )
   client <- connectCloudClient(service, authInfo)
 
@@ -936,8 +969,12 @@ test_that("listApplicationInvitations accumulates multiple pages and keeps accep
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
-    server = "connect.posit.cloud", name = "some-user", username = "some-user",
-    accountId = "123", accessToken = "tok", refreshToken = "ref"
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "123",
+    accessToken = "tok",
+    refreshToken = "ref"
   )
   client <- connectCloudClient(service, authInfo)
 
