@@ -28,7 +28,7 @@ test_that("awaitCompletion", {
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(revision_app)
+  app <- webfakes::local_app_process(revision_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -87,7 +87,7 @@ test_that("awaitCompletion falls back to an empty url instead of erroring when t
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(revision_app)
+  app <- webfakes::local_app_process(revision_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -132,7 +132,7 @@ test_that("awaitCompletion shows a specific message when content was deleted rig
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(revision_app)
+  app <- webfakes::local_app_process(revision_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -172,7 +172,7 @@ test_that("getAccounts() paginates through multiple pages", {
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(accounts_app)
+  app <- webfakes::local_app_process(accounts_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -224,7 +224,7 @@ test_that("awaitCompletion handles failure", {
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(revision_app)
+  app <- webfakes::local_app_process(revision_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -315,8 +315,8 @@ test_that("awaitCompletion handles failure with logs", {
   })
 
   # Start the main app and logs app
-  app <- webfakes::new_app_process(cloudApiApp)
-  logs_app_process <- webfakes::new_app_process(logs_app)
+  app <- webfakes::local_app_process(cloudApiApp)
+  logs_app_process <- webfakes::local_app_process(logs_app)
 
   service <- parseHttpUrl(app$url())
   authInfo <- list(
@@ -576,7 +576,7 @@ test_that("listApplications() paginates through multiple pages", {
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(contents_app)
+  app <- webfakes::local_app_process(contents_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -619,7 +619,7 @@ test_that("listApplications() filters by exact name, not substring", {
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(contents_app)
+  app <- webfakes::local_app_process(contents_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -661,7 +661,7 @@ test_that("listApplicationAuthorization GETs /contents/{id}/users and returns pa
       auto_unbox = TRUE
     )
   })
-  app <- webfakes::new_app_process(users_app)
+  app <- webfakes::local_app_process(users_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -689,7 +689,7 @@ test_that("removeApplicationUser DELETEs /contents/{id}/users/{userId} and retur
   delete_app$delete("/contents/:id/users/:userId", function(req, res) {
     res$set_status(200L)$send_json(list(), auto_unbox = TRUE)
   })
-  app <- webfakes::new_app_process(delete_app)
+  app <- webfakes::local_app_process(delete_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -731,7 +731,7 @@ test_that("inviteApplicationUser POSTs expected JSON fields to /contents/{id}/in
       )
     }
   })
-  app <- webfakes::new_app_process(invite_app)
+  app <- webfakes::local_app_process(invite_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -778,7 +778,7 @@ test_that("inviteApplicationUser sends null message field when emailMessage is N
       )
     }
   })
-  app <- webfakes::new_app_process(null_msg_app)
+  app <- webfakes::local_app_process(null_msg_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -827,7 +827,7 @@ test_that("listApplicationInvitations GETs /contents/{id}/invitations?accepted_t
       )
     }
   })
-  app <- webfakes::new_app_process(list_app)
+  app <- webfakes::local_app_process(list_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -865,7 +865,7 @@ test_that("resendApplicationInvitation sends {} (object not array) to /content_i
       )
     }
   })
-  app <- webfakes::new_app_process(resend_app)
+  app <- webfakes::local_app_process(resend_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -910,7 +910,7 @@ test_that("listApplicationAuthorization accumulates multiple pages", {
       )
     }
   })
-  app <- webfakes::new_app_process(users_app)
+  app <- webfakes::local_app_process(users_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
@@ -965,7 +965,7 @@ test_that("listApplicationInvitations accumulates multiple pages and keeps accep
       )
     }
   })
-  app <- webfakes::new_app_process(inv_app)
+  app <- webfakes::local_app_process(inv_app)
   service <- parseHttpUrl(app$url())
 
   authInfo <- list(
