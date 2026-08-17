@@ -15,6 +15,3 @@ tests/**/*.quarto_ipynb
 # license files should not be commited to this repository
 *.lic
 .positai
-
-# pylon build worktrees
-.worktrees/
