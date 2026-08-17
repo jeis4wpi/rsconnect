@@ -209,7 +209,7 @@ addAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
   lifecycle::deprecate_warn(
-    "1.10.1.9000",
+    "1.11.0",
     "addAuthorizedUser()",
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
@@ -279,7 +279,7 @@ removeAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
   lifecycle::deprecate_warn(
-    "1.10.1.9000",
+    "1.11.0",
     "removeAuthorizedUser()",
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
@@ -363,7 +363,7 @@ showUsers <- function(
     checkShinyappsServer(accountDetails$server)
   }
   lifecycle::deprecate_warn(
-    "1.10.1.9000",
+    "1.11.0",
     "showUsers()",
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
@@ -413,7 +413,7 @@ showInvited <- function(
     checkShinyappsServer(accountDetails$server)
   }
   lifecycle::deprecate_warn(
-    "1.10.1.9000",
+    "1.11.0",
     "showInvited()",
     details = collaboratorDeprecationDetails(accountDetails$server)
   )
@@ -463,7 +463,7 @@ resendInvitation <- function(
     checkShinyappsServer(accountDetails$server)
   }
   lifecycle::deprecate_warn(
-    "1.10.1.9000",
+    "1.11.0",
     "resendInvitation()",
     details = collaboratorDeprecationDetails(accountDetails$server)
   )

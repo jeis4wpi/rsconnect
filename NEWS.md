@@ -1,14 +1,12 @@
 # rsconnect (development version)
 
-* `showUsers()` and `showInvited()` now return data frames with atomic
-  `character` and `logical` columns on all backends. Previously the
-  shinyapps.io path used `do.call(rbind, list_of_lists)` on list-of-lists,
-  which produced list-matrix columns. User ids are now always `character`
-  (previously numeric on shinyapps.io); an empty result is a typed 0-row data
-  frame with named columns rather than `NULL`. On Posit Connect Cloud,
-  `showUsers()` additionally returns `display_name` and `role` columns from
-  the API response; the `account` column is `NA` on PCC (it is only populated
-  on shinyapps.io).
+* `showUsers()` and `showInvited()` now always return a data frame with
+  atomic `character`/`logical` columns, including a typed 0-row data frame
+  (rather than `NULL`) when there are no results. User ids are now always
+  `character` (previously numeric on shinyapps.io). On Posit Connect Cloud,
+  `showUsers()` also includes `display_name` and `role` columns; the
+  `account` column is populated only on shinyapps.io and is `NA` on Connect
+  Cloud.
 
 * `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
   `showInvited()`, and `resendInvitation()` are now soft-deprecated. Callers
