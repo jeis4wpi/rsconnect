@@ -93,8 +93,8 @@ applications <- function(account = NULL, server = NULL) {
     )
     res <- lapply(apps, function(x) {
       # On PCC the content list response does not expose a separately served-app
-      # URL; the browsable content URL is the best available and is used for both
-      # url and config_url.
+      # URL. url = the browsable content view page; config_url = the settings
+      # page for that content item.
       contentUrl <- paste0(contentUrlBase, x$id %||% "")
       data.frame(
         id = x$id %||% NA_character_,
@@ -104,7 +104,7 @@ applications <- function(account = NULL, server = NULL) {
         status = NA_character_,
         size = NA_character_,
         instances = NA_integer_,
-        config_url = contentUrl,
+        config_url = paste0(contentUrl, "/settings/info"),
         created_time = x$created_time %||% NA_character_,
         updated_time = x$updated_time %||% NA_character_,
         guid = NA_character_,

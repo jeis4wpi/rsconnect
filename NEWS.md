@@ -5,7 +5,10 @@
   shinyapps.io path used `do.call(rbind, list_of_lists)` on list-of-lists,
   which produced list-matrix columns. User ids are now always `character`
   (previously numeric on shinyapps.io); an empty result is a typed 0-row data
-  frame with named columns rather than `NULL`.
+  frame with named columns rather than `NULL`. On Posit Connect Cloud,
+  `showUsers()` additionally returns `display_name` and `role` columns from
+  the API response; the `account` column is `NA` on PCC (it is only populated
+  on shinyapps.io).
 
 * `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
   `showInvited()`, and `resendInvitation()` are now soft-deprecated. Callers

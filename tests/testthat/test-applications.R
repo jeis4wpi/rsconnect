@@ -70,14 +70,15 @@ test_that("applications() returns a data frame for PCC accounts", {
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 1)
   expect_equal(result$title, "My App")
-  # Both url and config_url must use the server-side slug, not the local alias.
+  # url = content view page (server-side slug, not the local alias).
+  # config_url = the content settings page.
   expect_equal(
     result$url,
     "https://connect.posit.cloud/real-slug/content/abc-123"
   )
   expect_equal(
     result$config_url,
-    "https://connect.posit.cloud/real-slug/content/abc-123"
+    "https://connect.posit.cloud/real-slug/content/abc-123/settings/info"
   )
 })
 

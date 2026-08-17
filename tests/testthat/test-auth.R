@@ -19,8 +19,22 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
     list(
       listApplicationAuthorization = function(appId) {
         list(
-          list(user = list(id = "user-uuid-1", email = "alice@example.com")),
-          list(user = list(id = "user-uuid-2", email = "bob@example.com"))
+          list(
+            user = list(
+              id = "user-uuid-1",
+              email = "alice@example.com",
+              display_name = "Alice Smith"
+            ),
+            role = "collaborator"
+          ),
+          list(
+            user = list(
+              id = "user-uuid-2",
+              email = "bob@example.com",
+              display_name = "Bob Jones"
+            ),
+            role = "viewer"
+          )
         )
       }
     )
@@ -37,6 +51,9 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 2)
   expect_equal(result$email, c("alice@example.com", "bob@example.com"))
+  expect_equal(result$display_name, c("Alice Smith", "Bob Jones"))
+  expect_equal(result$role, c("collaborator", "viewer"))
+  expect_true(all(is.na(result$account)))
 })
 
 test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUser on PCC", {
@@ -114,7 +131,42 @@ test_that("showUsers returns empty data frame with correct columns when no users
   )
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 0L)
+  expect_named(result, c("id", "email", "account", "display_name", "role"))
+})
+
+test_that("showUsers on shinyapps.io returns only id/email/account columns (no display_name/role)", {
+  local_temp_config()
+  addTestServer(url = "https://shinyapps.io", name = "shinyapps.io")
+  addTestAccount("myaccount", server = "shinyapps.io")
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = 42L))
+      },
+      listApplicationAuthorization = function(appId) {
+        list(
+          list(
+            user = list(id = "101", email = "alice@example.com"),
+            account = "alice-account"
+          )
+        )
+      }
+    )
+  })
+
+  expect_warning(
+    result <- showUsers(
+      appName = "myapp",
+      account = "myaccount",
+      server = "shinyapps.io"
+    ),
+    regexp = "deprecated"
+  )
+  expect_s3_class(result, "data.frame")
+  expect_equal(nrow(result), 1L)
   expect_named(result, c("id", "email", "account"))
+  expect_equal(result$account, "alice-account")
 })
 
 test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser on PCC", {

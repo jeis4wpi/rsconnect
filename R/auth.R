@@ -18,7 +18,10 @@ collaboratorDeprecationDetails <- function(server) {
 # Internal: fetch authorized users for an already-resolved application id.
 # Does NOT call resolveContentTarget() or emit deprecate_warn(); callers are
 # responsible for resolving content exactly once before invoking this.
-showUsers_impl <- function(api, applicationId) {
+# isPCC = TRUE adds display_name and role columns from the PCC response shape
+# ({user: {id, email, display_name, ...}, role}); shinyapps.io keeps the
+# original three-column shape (id, email, account).
+showUsers_impl <- function(api, applicationId, isPCC = FALSE) {
   res <- api$listApplicationAuthorization(applicationId)
   rows <- lapply(res, function(x) {
     id <- as.character(x$user$id %||% NA_character_)
@@ -31,18 +34,39 @@ showUsers_impl <- function(api, applicationId) {
         )
       )
     }
-    data.frame(
-      id = id,
-      email = email,
-      account = if (!is.null(x$account)) {
-        as.character(x$account)
-      } else {
-        NA_character_
-      },
-      stringsAsFactors = FALSE
-    )
+    if (isPCC) {
+      data.frame(
+        id = id,
+        email = email,
+        account = NA_character_,
+        display_name = as.character(x$user$display_name %||% NA_character_),
+        role = as.character(x$role %||% NA_character_),
+        stringsAsFactors = FALSE
+      )
+    } else {
+      data.frame(
+        id = id,
+        email = email,
+        account = if (!is.null(x$account)) {
+          as.character(x$account)
+        } else {
+          NA_character_
+        },
+        stringsAsFactors = FALSE
+      )
+    }
   })
   if (length(rows) == 0L) {
+    if (isPCC) {
+      return(data.frame(
+        id = character(),
+        email = character(),
+        account = character(),
+        display_name = character(),
+        role = character(),
+        stringsAsFactors = FALSE
+      ))
+    }
     return(data.frame(
       id = character(),
       email = character(),
@@ -315,6 +339,12 @@ removeAuthorizedUser <- function(
 #' @param appName Name of application.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showInvited()]
+#' @return A data frame with one row per authorized user. Columns always
+#'   present: \code{id}, \code{email}, \code{account}. The \code{account}
+#'   column is populated on shinyapps.io only and is \code{NA} on Posit Connect
+#'   Cloud. On Posit Connect Cloud the data frame additionally includes
+#'   \code{display_name} and \code{role} (e.g. \code{"viewer"} or
+#'   \code{"collaborator"}) from the API response.
 #' @note This function works for ShinyApps and Posit Connect Cloud.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
@@ -341,7 +371,11 @@ showUsers <- function(
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
   api <- clientForAccount(accountDetails)
-  showUsers_impl(api, application$id)
+  showUsers_impl(
+    api,
+    application$id,
+    isPCC = isPositConnectCloudServer(accountDetails$server)
+  )
 }
 
 #' List invited users for an application

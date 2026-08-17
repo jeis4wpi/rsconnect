@@ -18,6 +18,14 @@ there are multiple options, you'll be prompted to pick one.
 
 Use \code{\link[=accounts]{accounts()}} to see the full list of available options.}
 }
+\value{
+A data frame with one row per authorized user. Columns always
+present: \code{id}, \code{email}, \code{account}. The \code{account}
+column is populated on shinyapps.io only and is \code{NA} on Posit Connect
+Cloud. On Posit Connect Cloud the data frame additionally includes
+\code{display_name} and \code{role} (e.g. \code{"viewer"} or
+\code{"collaborator"}) from the API response.
+}
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
 
