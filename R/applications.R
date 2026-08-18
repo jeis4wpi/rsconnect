@@ -92,19 +92,22 @@ applications <- function(account = NULL, server = NULL) {
       "/content/"
     )
     res <- lapply(apps, function(x) {
-      # On PCC the content list response does not expose a separately served-app
-      # URL. url = the browsable content view page; config_url = the settings
-      # page for that content item.
-      contentUrl <- paste0(contentUrlBase, x$id %||% "")
+      # url = the standalone served URL handed to app consumers (consistent with
+      # shinyapps.io/Connect); config_url = the dashboard settings page.
+      # Prefer the revision's served URL (the vanity/custom URL when set); fall
+      # back to the constructed content-id URL for content not yet published,
+      # where current_revision (or its url) is absent.
+      contentId <- x$id %||% ""
+      dashboardUrl <- paste0(contentUrlBase, contentId)
       data.frame(
         id = x$id %||% NA_character_,
         name = x$title %||% NA_character_,
         title = x$title %||% NA_character_,
-        url = contentUrl,
+        url = x$current_revision$url %||% connectCloudStandaloneUrl(contentId),
         status = NA_character_,
         size = NA_character_,
         instances = NA_integer_,
-        config_url = paste0(contentUrl, "/settings/info"),
+        config_url = paste0(dashboardUrl, "/settings/info"),
         created_time = x$created_time %||% NA_character_,
         updated_time = x$updated_time %||% NA_character_,
         guid = NA_character_,

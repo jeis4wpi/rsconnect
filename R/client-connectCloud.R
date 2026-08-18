@@ -22,6 +22,17 @@ connectCloudContentUrl <- function(getAccounts, accountId, contentId) {
   paste0(connectCloudUrls()$ui, "/", ownerAccount$name, "/content/", contentId)
 }
 
+# Standalone (served) content URL -- the link handed to app consumers, and the
+# value returned in the `url` column of `applications()`. Consistent with the
+# served URL that shinyapps.io and Posit Connect report. The canonical scheme is
+# <content-id>.share.<connect-cloud-host> (e.g.
+# https://abc-123.share.connect.posit.cloud/). Derived from the UI base so it
+# tracks the active environment (production/staging/development).
+connectCloudStandaloneUrl <- function(contentId) {
+  host <- sub("^https?://", "", connectCloudUrls()$ui)
+  paste0("https://", contentId, ".share.", host, "/")
+}
+
 # Map rsconnect appMode to Connect Cloud contentType
 cloudContentTypeFromAppMode <- function(appMode) {
   switch(
