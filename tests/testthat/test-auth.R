@@ -857,6 +857,47 @@ test_that("removeAuthorizedUser hints at redaction when the user cannot be match
   )
 })
 
+test_that("removeAuthorizedUser omits the redaction hint for an id lookup", {
+  local_temp_config()
+  addTestServer(
+    url = "https://connect.posit.cloud",
+    name = "connect.posit.cloud"
+  )
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        list(list(user = list(id = "user-uuid-1", email = "alice@example.com")))
+      }
+    )
+  })
+
+  # An id-based lookup that misses is a plain not-found: the redaction hint
+  # (which only helps email searches) must not appear.
+  cnd <- suppressWarnings(
+    expect_error(
+      removeAuthorizedUser(
+        "user-uuid-missing",
+        appDir = app_dir,
+        account = "myaccount",
+        server = "connect.posit.cloud"
+      ),
+      regexp = "not found"
+    )
+  )
+  expect_false(grepl("redacted", conditionMessage(cnd)))
+})
+
 test_that("resendInvitation aborts with clear message when matched invitation has no id", {
   local_temp_config()
   addTestServer(

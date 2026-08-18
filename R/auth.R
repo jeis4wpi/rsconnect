@@ -307,12 +307,17 @@ removeAuthorizedUser <- function(
   } else if (user %in% users$email) {
     user <- users[users$email == user, ]
   } else {
-    cli::cli_abort(
-      c(
-        "User {.val {user}} not found.",
-        i = "Pass the user id from {.fn showUsers} instead of the email: on Posit Connect Cloud an email can be redacted and won't match."
-      )
-    )
+    # Only PCC redacts emails, and the hint only helps someone who searched by
+    # email (an id-based lookup already avoids the problem).
+    redactionHint <-
+      isPositConnectCloudServer(accountDetails$server) &&
+      grepl("@", user, fixed = TRUE)
+    cli::cli_abort(c(
+      "User {.val {user}} not found.",
+      i = if (redactionHint) {
+        "On Posit Connect Cloud an email can be redacted and won't match; pass the user id from {.fn showUsers} instead."
+      }
+    ))
   }
 
   if (is.na(user$id)) {
