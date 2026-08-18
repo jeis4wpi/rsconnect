@@ -307,7 +307,12 @@ removeAuthorizedUser <- function(
   } else if (user %in% users$email) {
     user <- users[users$email == user, ]
   } else {
-    stop("User \"", user, "\" not found", call. = FALSE)
+    cli::cli_abort(
+      c(
+        "User {.val {user}} not found.",
+        i = "Pass the user id from {.fn showUsers} instead of the email: on Posit Connect Cloud an email can be redacted and won't match."
+      )
+    )
   }
 
   if (is.na(user$id)) {

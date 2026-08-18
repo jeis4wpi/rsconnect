@@ -817,6 +817,46 @@ test_that("removeAuthorizedUser aborts with clear message when matched user has 
   )
 })
 
+test_that("removeAuthorizedUser hints at redaction when the user cannot be matched", {
+  local_temp_config()
+  addTestServer(
+    url = "https://connect.posit.cloud",
+    name = "connect.posit.cloud"
+  )
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      # PCC redacted the email, so matching on the caller's email fails.
+      listApplicationAuthorization = function(appId) {
+        list(list(user = list(id = "user-uuid-1", email = "REDACTED")))
+      }
+    )
+  })
+
+  expect_warning(
+    expect_error(
+      removeAuthorizedUser(
+        "alice@example.com",
+        appDir = app_dir,
+        account = "myaccount",
+        server = "connect.posit.cloud"
+      ),
+      regexp = "redacted"
+    ),
+    regexp = "deprecated"
+  )
+})
+
 test_that("resendInvitation aborts with clear message when matched invitation has no id", {
   local_temp_config()
   addTestServer(
