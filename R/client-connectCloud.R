@@ -183,10 +183,12 @@ connectCloudClient <- function(service, authInfo) {
       offset <- 0
       allItems <- list()
       repeat {
+        # order_by gives the list a stable total order; without it offset-based
+        # paging can skip or duplicate rows across requests.
         path <- paste0(
           "/contents?account_id=",
           accountId,
-          "&include_total=true&limit=",
+          "&order_by=created_time&include_total=true&limit=",
           pageSize,
           "&offset=",
           offset
@@ -203,6 +205,12 @@ connectCloudClient <- function(service, authInfo) {
           break
         }
       }
+      # Drop content that has been soft-deleted but not yet hard-deleted: an
+      # account owner can still see it in the window before the cleanup job runs.
+      allItems <- Filter(
+        function(item) !identical(item$state, "deleted"),
+        allItems
+      )
       # Set name = title so resolveApplication (which matches on app$name) works for PCC.
       items <- lapply(allItems, function(item) {
         item$name <- item$title
@@ -474,11 +482,12 @@ connectCloudClient <- function(service, authInfo) {
       offset <- 0
       allItems <- list()
       repeat {
+        # order_by keeps offset-based paging stable (see listApplications).
         path <- paste0(
           "/contents/",
           appId,
           "/users",
-          "?include_total=true&limit=",
+          "?order_by=created_time&include_total=true&limit=",
           pageSize,
           "&offset=",
           offset
@@ -520,11 +529,12 @@ connectCloudClient <- function(service, authInfo) {
       offset <- 0
       allItems <- list()
       repeat {
+        # order_by keeps offset-based paging stable (see listApplications).
         path <- paste0(
           "/contents/",
           appId,
           "/invitations",
-          "?accepted_time__isnull=true&include_total=true&limit=",
+          "?accepted_time__isnull=true&order_by=created_time&include_total=true&limit=",
           pageSize,
           "&offset=",
           offset

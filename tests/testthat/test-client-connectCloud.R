@@ -639,6 +639,51 @@ test_that("listApplications() filters by exact name, not substring", {
   expect_equal(result[[1]]$name, "my-app")
 })
 
+test_that("listApplications() requests a stable sort and drops deleted content", {
+  skip_if_not_installed("webfakes")
+
+  contents_app <- webfakes::new_app()
+  contents_app$use(webfakes::mw_json())
+  contents_app$get("/contents", function(req, res) {
+    # Reject if the stable-sort param is absent (paging regression guard).
+    if (!identical(req$query$order_by, "created_time")) {
+      res$set_status(400L)$send_json(
+        list(error = "order_by=created_time must be present"),
+        auto_unbox = TRUE
+      )
+      return()
+    }
+    res$set_status(200L)$send_json(
+      list(
+        data = list(
+          list(id = "c1", title = "active-app", state = "active"),
+          list(id = "c2", title = "deleted-app", state = "deleted")
+        ),
+        total = 2L
+      ),
+      auto_unbox = TRUE
+    )
+  })
+  app <- webfakes::local_app_process(contents_app)
+  service <- parseHttpUrl(app$url())
+
+  authInfo <- list(
+    server = "connect.posit.cloud",
+    name = "some-user",
+    username = "some-user",
+    accountId = "acct-1",
+    accessToken = "current-token",
+    refreshToken = "refresh-token"
+  )
+  client <- connectCloudClient(service, authInfo)
+
+  # order_by must have been sent (else the app 400s); deleted content is dropped.
+  result <- client$listApplications("acct-1")
+  expect_equal(length(result), 1L)
+  expect_equal(result[[1]]$id, "c1")
+  expect_equal(result[[1]]$name, "active-app")
+})
+
 test_that("listApplicationAuthorization GETs /contents/{id}/users and returns parsed data", {
   skip_if_not_installed("webfakes")
 
@@ -897,6 +942,14 @@ test_that("listApplicationAuthorization accumulates multiple pages", {
   users_app <- webfakes::new_app()
   users_app$use(webfakes::mw_json())
   users_app$get("/contents/:id/users", function(req, res) {
+    # Reject if the stable-sort param is absent (paging regression guard).
+    if (!identical(req$query$order_by, "created_time")) {
+      res$set_status(400L)$send_json(
+        list(error = "order_by=created_time must be present"),
+        auto_unbox = TRUE
+      )
+      return()
+    }
     offset <- as.integer(req$query$offset %||% "0")
     if (offset == 0L) {
       res$set_status(200L)$send_json(
@@ -944,10 +997,15 @@ test_that("listApplicationInvitations accumulates multiple pages and keeps accep
   inv_app <- webfakes::new_app()
   inv_app$use(webfakes::mw_json())
   inv_app$get("/contents/:id/invitations", function(req, res) {
-    # Reject if the required filter param is absent
-    if (!identical(req$query$accepted_time__isnull, "true")) {
+    # Reject if the required filter or stable-sort param is absent.
+    if (
+      !identical(req$query$accepted_time__isnull, "true") ||
+        !identical(req$query$order_by, "created_time")
+    ) {
       res$set_status(400L)$send_json(
-        list(error = "accepted_time__isnull=true must be present"),
+        list(
+          error = "accepted_time__isnull=true and order_by=created_time must be present"
+        ),
         auto_unbox = TRUE
       )
       return()
