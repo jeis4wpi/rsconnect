@@ -401,7 +401,7 @@ test_that("showUsers aborts with a clear message when a user record has neither 
         account = "myaccount",
         server = "connect.posit.cloud"
       ),
-      regexp = "Unexpected response from Connect Cloud"
+      regexp = "Unexpected response from Posit Connect Cloud"
     ),
     regexp = "deprecated"
   )
