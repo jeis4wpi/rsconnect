@@ -140,31 +140,41 @@ connectCloudClient <- function(service, authInfo) {
     content
   }
 
-  # Paginates through GET /accounts?has_user_role=true, accumulating every
-  # account the caller has a role on (not just the first page), since the
-  # content being migrated/published may belong to any of them.
-  getAccounts <- function() {
-    pageSize <- 100
+  # Accumulate every page of a paginated GET list endpoint. `buildPath(limit,
+  # offset)` returns the request path for a single page; it must include
+  # `include_total=true` and a stable `order_by` so offset paging can't skip or
+  # duplicate rows. Callers do any post-filtering on the returned list.
+  paginate <- function(buildPath, pageSize = 100) {
     offset <- 0
-    allAccounts <- list()
+    allItems <- list()
     repeat {
-      path <- paste0(
-        "/accounts?has_user_role=true&include_total=true&limit=",
-        pageSize,
-        "&offset=",
-        offset
-      )
-      response <- withTokenRefreshRetry(GET, path)
-      allAccounts <- c(allAccounts, response$data)
+      response <- withTokenRefreshRetry(GET, buildPath(pageSize, offset))
+      allItems <- c(allItems, response$data)
       offset <- offset + length(response$data)
+      total <- as.numeric(response$total)
       if (
         length(response$data) == 0 ||
-          isTRUE(offset >= as.numeric(response$total))
+          isTRUE(offset >= total) ||
+          (length(total) == 0L && length(response$data) < pageSize)
       ) {
         break
       }
     }
-    list(data = allAccounts)
+    allItems
+  }
+
+  # Accumulates every account the caller has a role on (not just the first
+  # page), since the content being migrated/published may belong to any of them.
+  getAccounts <- function() {
+    accounts <- paginate(function(limit, offset) {
+      paste0(
+        "/accounts?has_user_role=true&include_total=true&limit=",
+        limit,
+        "&offset=",
+        offset
+      )
+    })
+    list(data = accounts)
   }
 
   list(
@@ -179,32 +189,18 @@ connectCloudClient <- function(service, authInfo) {
     withTokenRefreshRetry = withTokenRefreshRetry,
 
     listApplications = function(accountId, filters = list()) {
-      pageSize <- 100
-      offset <- 0
-      allItems <- list()
-      repeat {
-        # order_by gives the list a stable total order; without it offset-based
-        # paging can skip or duplicate rows across requests.
-        path <- paste0(
+      # order_by gives the list a stable total order; without it offset-based
+      # paging can skip or duplicate rows across requests.
+      allItems <- paginate(function(limit, offset) {
+        paste0(
           "/contents?account_id=",
           accountId,
           "&order_by=created_time&include_total=true&limit=",
-          pageSize,
+          limit,
           "&offset=",
           offset
         )
-        response <- withTokenRefreshRetry(GET, path)
-        allItems <- c(allItems, response$data)
-        offset <- offset + length(response$data)
-        total <- as.numeric(response$total)
-        if (
-          length(response$data) == 0 ||
-            isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)
-        ) {
-          break
-        }
-      }
+      })
       # Drop content that has been soft-deleted but not yet hard-deleted: an
       # account owner can still see it in the window before the cleanup job runs.
       allItems <- Filter(
@@ -478,33 +474,17 @@ connectCloudClient <- function(service, authInfo) {
     getAccounts = getAccounts,
 
     listApplicationAuthorization = function(appId) {
-      pageSize <- 100
-      offset <- 0
-      allItems <- list()
-      repeat {
-        # order_by keeps offset-based paging stable (see listApplications).
-        path <- paste0(
+      # order_by keeps offset-based paging stable (see paginate()).
+      paginate(function(limit, offset) {
+        paste0(
           "/contents/",
           appId,
-          "/users",
-          "?order_by=created_time&include_total=true&limit=",
-          pageSize,
+          "/users?order_by=created_time&include_total=true&limit=",
+          limit,
           "&offset=",
           offset
         )
-        response <- withTokenRefreshRetry(GET, path)
-        allItems <- c(allItems, response$data)
-        offset <- offset + length(response$data)
-        total <- as.numeric(response$total)
-        if (
-          length(response$data) == 0 ||
-            isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)
-        ) {
-          break
-        }
-      }
-      allItems
+      })
     },
 
     removeApplicationUser = function(appId, userId) {
@@ -525,33 +505,17 @@ connectCloudClient <- function(service, authInfo) {
     },
 
     listApplicationInvitations = function(appId) {
-      pageSize <- 100
-      offset <- 0
-      allItems <- list()
-      repeat {
-        # order_by keeps offset-based paging stable (see listApplications).
-        path <- paste0(
+      # order_by keeps offset-based paging stable (see paginate()).
+      paginate(function(limit, offset) {
+        paste0(
           "/contents/",
           appId,
-          "/invitations",
-          "?accepted_time__isnull=true&order_by=created_time&include_total=true&limit=",
-          pageSize,
+          "/invitations?accepted_time__isnull=true&order_by=created_time&include_total=true&limit=",
+          limit,
           "&offset=",
           offset
         )
-        response <- withTokenRefreshRetry(GET, path)
-        allItems <- c(allItems, response$data)
-        offset <- offset + length(response$data)
-        total <- as.numeric(response$total)
-        if (
-          length(response$data) == 0 ||
-            isTRUE(offset >= total) ||
-            (length(total) == 0L && length(response$data) < pageSize)
-        ) {
-          break
-        }
-      }
-      allItems
+      })
     },
 
     resendApplicationInvitation = function(inviteId, regenerate) {
