@@ -27,10 +27,6 @@ Cloud. On Posit Connect Cloud the data frame additionally includes
 \code{"collaborator"}) from the API response.
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
-
-List authorized users for an application
-
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{

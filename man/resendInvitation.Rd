@@ -31,10 +31,6 @@ there are multiple options, you'll be prompted to pick one.
 Use \code{\link[=accounts]{accounts()}} to see the full list of available options.}
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
-
-Resend invitation for invited users of an application
-
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{

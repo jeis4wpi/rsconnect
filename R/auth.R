@@ -1,23 +1,6 @@
-# Internal: deprecation remediation text varies by backend.
-collaboratorDeprecationDetails <- function(server) {
-  if (isPositConnectCloudServer(server)) {
-    paste0(
-      "Manage collaborators directly in Posit Connect Cloud at ",
-      "<",
-      connectCloudUrls()$ui,
-      ">."
-    )
-  } else {
-    paste0(
-      "Manage collaborators directly in shinyapps.io at ",
-      "<https://www.shinyapps.io>."
-    )
-  }
-}
-
 # Internal: fetch authorized users for an already-resolved application id.
-# Does NOT call resolveContentTarget() or emit deprecate_warn(); callers are
-# responsible for resolving content exactly once before invoking this.
+# Does NOT call resolveContentTarget(); callers are responsible for resolving
+# content exactly once before invoking this.
 # isPCC = TRUE adds display_name and role columns from the PCC response shape
 # ({user: {id, email, display_name, ...}, role}); shinyapps.io keeps the
 # original three-column shape (id, email, account).
@@ -79,7 +62,7 @@ showUsers_impl <- function(api, applicationId, isPCC = FALSE) {
 }
 
 # Internal: fetch pending invitations for an already-resolved application id.
-# Does NOT call resolveContentTarget() or emit deprecate_warn().
+# Does NOT call resolveContentTarget().
 showInvited_impl <- function(api, applicationId) {
   res <- api$listApplicationInvitations(applicationId)
   # PCC uses email_address / is_expired; shinyapps.io uses email / expired.
@@ -168,11 +151,6 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 
 #' Add authorized user to application
 #'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
-#' Add authorized user to application
-#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param email Email address of user to add.
@@ -210,11 +188,6 @@ addAuthorizedUser <- function(
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
-  lifecycle::deprecate_warn(
-    "1.11.0",
-    "addAuthorizedUser()",
-    details = collaboratorDeprecationDetails(accountDetails$server)
-  )
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
@@ -249,11 +222,6 @@ addAuthorizedUser <- function(
 
 #' Remove authorized user from an application
 #'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
-#' Remove authorized user from an application
-#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param user The user to remove. Can be id or email address.
@@ -281,11 +249,6 @@ removeAuthorizedUser <- function(
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
-  lifecycle::deprecate_warn(
-    "1.11.0",
-    "removeAuthorizedUser()",
-    details = collaboratorDeprecationDetails(accountDetails$server)
-  )
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
@@ -297,8 +260,7 @@ removeAuthorizedUser <- function(
   # resolve content exactly once: use impl so showUsers() does not call
   # resolveContentTarget() a second time (a second interactive prompt could
   # return a different record, causing removeApplicationUser to act on the
-  # wrong content). This supersedes the plan's accepted double-deprecation
-  # note — the root issue is a correctness bug, not just warning noise.
+  # wrong content).
   api <- clientForAccount(accountDetails)
   users <- showUsers_impl(api, application$id)
 
@@ -340,11 +302,6 @@ removeAuthorizedUser <- function(
 
 #' List authorized users for an application
 #'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
-#' List authorized users for an application
-#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param appDir Directory containing application. Defaults to
@@ -376,11 +333,6 @@ showUsers <- function(
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
-  lifecycle::deprecate_warn(
-    "1.11.0",
-    "showUsers()",
-    details = collaboratorDeprecationDetails(accountDetails$server)
-  )
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
@@ -392,11 +344,6 @@ showUsers <- function(
   )
 }
 
-#' List invited users for an application
-#'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
 #' List invited users for an application
 #'
 #' Supported servers: ShinyApps, Posit Connect Cloud
@@ -427,11 +374,6 @@ showInvited <- function(
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
-  lifecycle::deprecate_warn(
-    "1.11.0",
-    "showInvited()",
-    details = collaboratorDeprecationDetails(accountDetails$server)
-  )
 
   application <- resolveContentTarget(accountDetails, appDir, appName)
 
@@ -439,11 +381,6 @@ showInvited <- function(
   showInvited_impl(api, application$id)
 }
 
-#' Resend invitation for invited users of an application
-#'
-#' @description
-#' `r lifecycle::badge("deprecated")`
-#'
 #' Resend invitation for invited users of an application
 #'
 #' Supported servers: ShinyApps, Posit Connect Cloud
@@ -478,14 +415,9 @@ resendInvitation <- function(
   if (!isPositConnectCloudServer(accountDetails$server)) {
     checkShinyappsServer(accountDetails$server)
   }
-  lifecycle::deprecate_warn(
-    "1.11.0",
-    "resendInvitation()",
-    details = collaboratorDeprecationDetails(accountDetails$server)
-  )
 
   # resolve content exactly once, then fetch invitations via impl (avoids a
-  # second resolveContentTarget() call and a second deprecate_warn()).
+  # second resolveContentTarget() call).
   application <- resolveContentTarget(accountDetails, appDir, appName)
   api <- clientForAccount(accountDetails)
   invited <- showInvited_impl(api, application$id)

@@ -36,10 +36,6 @@ custom message to send in email invitation. Defaults to NULL, which
 will use default invitation message.}
 }
 \description{
-\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
-
-Add authorized user to application
-
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{

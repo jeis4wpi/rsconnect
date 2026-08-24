@@ -1,4 +1,4 @@
-test_that("showUsers emits deprecation and returns data frame for PCC", {
+test_that("showUsers returns a data frame for PCC", {
   local_temp_config()
   addTestServer(
     url = "https://connect.posit.cloud",
@@ -40,13 +40,10 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
     )
   })
 
-  expect_warning(
-    result <- showUsers(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  result <- showUsers(
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 2)
@@ -56,7 +53,7 @@ test_that("showUsers emits deprecation and returns data frame for PCC", {
   expect_true(all(is.na(result$account)))
 })
 
-test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUser on PCC", {
+test_that("removeAuthorizedUser calls removeApplicationUser on PCC", {
   local_temp_config()
   addTestServer(
     url = "https://connect.posit.cloud",
@@ -86,14 +83,11 @@ test_that("removeAuthorizedUser emits deprecation and calls removeApplicationUse
     )
   })
 
-  expect_warning(
-    removeAuthorizedUser(
-      "alice@example.com",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  removeAuthorizedUser(
+    "alice@example.com",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(removed_user_id, "user-uuid-1")
 })
@@ -121,13 +115,10 @@ test_that("showUsers returns empty data frame with correct columns when no users
     )
   })
 
-  expect_warning(
-    result <- showUsers(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  result <- showUsers(
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 0L)
@@ -155,13 +146,10 @@ test_that("showUsers on shinyapps.io returns only id/email/account columns (no d
     )
   })
 
-  expect_warning(
-    result <- showUsers(
-      appName = "myapp",
-      account = "myaccount",
-      server = "shinyapps.io"
-    ),
-    regexp = "deprecated"
+  result <- showUsers(
+    appName = "myapp",
+    account = "myaccount",
+    server = "shinyapps.io"
   )
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 1L)
@@ -186,20 +174,17 @@ test_that("showUsers names shinyapps.io (not Connect Cloud) in the malformed-rec
     )
   })
 
-  expect_warning(
-    expect_error(
-      showUsers(
-        appName = "myapp",
-        account = "myaccount",
-        server = "shinyapps.io"
-      ),
-      regexp = "Unexpected response from shinyapps\\.io"
+  expect_error(
+    showUsers(
+      appName = "myapp",
+      account = "myaccount",
+      server = "shinyapps.io"
     ),
-    regexp = "deprecated"
+    regexp = "Unexpected response from shinyapps\\.io"
   )
 })
 
-test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser on PCC", {
+test_that("addAuthorizedUser calls inviteApplicationUser on PCC", {
   local_temp_config()
   addTestServer(
     url = "https://connect.posit.cloud",
@@ -226,20 +211,17 @@ test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser o
     )
   })
 
-  expect_warning(
-    addAuthorizedUser(
-      "alice@example.com",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  addAuthorizedUser(
+    "alice@example.com",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_length(invited, 1)
   expect_equal(invited[[1]]$email, "alice@example.com")
 })
 
-test_that("showInvited emits deprecation and maps PCC email_address/is_expired fields", {
+test_that("showInvited maps PCC email_address/is_expired fields", {
   local_temp_config()
   addTestServer(
     url = "https://connect.posit.cloud",
@@ -268,13 +250,10 @@ test_that("showInvited emits deprecation and maps PCC email_address/is_expired f
     )
   })
 
-  expect_warning(
-    result <- showInvited(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  result <- showInvited(
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(result$email, "alice@example.com")
   expect_true(is.na(result$link))
@@ -320,7 +299,6 @@ test_that("addAuthorizedUser warns when sendEmail is non-NULL on PCC", {
       invokeRestart("muffleWarning")
     }
   )
-  expect_true(any(grepl("deprecated", msgs, ignore.case = TRUE)))
   expect_true(any(grepl(
     "sendEmail.*ignored|ignored.*sendEmail|PCC always",
     msgs
@@ -353,13 +331,10 @@ test_that("showInvited returns NA for invitation records missing email and expir
     )
   })
 
-  expect_warning(
-    result <- showInvited(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  result <- showInvited(
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_s3_class(result, "data.frame")
   expect_equal(nrow(result), 1L)
@@ -393,21 +368,18 @@ test_that("showUsers aborts with a clear message when a user record has neither 
     )
   })
 
-  # The deprecation warn fires first; the abort follows inside showUsers_impl.
-  expect_warning(
-    expect_error(
-      showUsers(
-        appDir = app_dir,
-        account = "myaccount",
-        server = "connect.posit.cloud"
-      ),
-      regexp = "Unexpected response from Posit Connect Cloud"
+  # The abort is raised inside showUsers_impl.
+  expect_error(
+    showUsers(
+      appDir = app_dir,
+      account = "myaccount",
+      server = "connect.posit.cloud"
     ),
-    regexp = "deprecated"
+    regexp = "Unexpected response from Posit Connect Cloud"
   )
 })
 
-test_that("showUsers errors on non-shinyapps non-PCC server without emitting deprecation", {
+test_that("showUsers errors on a non-shinyapps, non-PCC server", {
   local_temp_config()
   addTestServer(
     url = "https://connect.example.com",
@@ -415,27 +387,17 @@ test_that("showUsers errors on non-shinyapps non-PCC server without emitting dep
   )
   addTestAccount("myaccount", server = "connect.example.com")
 
-  saw_deprecation <- FALSE
   expect_error(
-    withCallingHandlers(
-      showUsers(
-        appName = "myapp",
-        account = "myaccount",
-        server = "connect.example.com"
-      ),
-      warning = function(w) {
-        if (grepl("deprecated", conditionMessage(w), ignore.case = TRUE)) {
-          saw_deprecation <<- TRUE
-        }
-        invokeRestart("muffleWarning")
-      }
+    showUsers(
+      appName = "myapp",
+      account = "myaccount",
+      server = "connect.example.com"
     ),
     regexp = "shinyapps\\.io"
   )
-  expect_false(saw_deprecation)
 })
 
-test_that("resendInvitation emits deprecation and calls resendApplicationInvitation on PCC", {
+test_that("resendInvitation calls resendApplicationInvitation on PCC", {
   local_temp_config()
   addTestServer(
     url = "https://connect.posit.cloud",
@@ -469,14 +431,11 @@ test_that("resendInvitation emits deprecation and calls resendApplicationInvitat
     )
   })
 
-  expect_warning(
-    resendInvitation(
-      "alice@example.com",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  resendInvitation(
+    "alice@example.com",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(resent_id, "invite-uuid-1")
 })
@@ -508,13 +467,10 @@ test_that("resolveContentTarget uses deployment-record appId on PCC, not title",
     )
   })
 
-  expect_warning(
-    showUsers(
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  showUsers(
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(captured_app_id, "content-uuid-abc")
 })
@@ -576,14 +532,11 @@ test_that("resolveContentTarget: appName selects correct record among multiple i
     )
   })
 
-  expect_warning(
-    showUsers(
-      appDir = app_dir,
-      appName = "b",
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  showUsers(
+    appDir = app_dir,
+    appName = "b",
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(captured_app_id, "content-uuid-bbb")
 })
@@ -642,13 +595,10 @@ test_that("resolveContentTarget delegates to resolveApplication on shinyapps.io"
     )
   })
 
-  expect_warning(
-    showUsers(
-      appName = "myapp",
-      account = "myaccount",
-      server = "shinyapps.io"
-    ),
-    regexp = "deprecated"
+  showUsers(
+    appName = "myapp",
+    account = "myaccount",
+    server = "shinyapps.io"
   )
   expect_equal(captured_app_id, 42L)
 })
@@ -697,15 +647,12 @@ test_that("removeAuthorizedUser resolves content target exactly once (no double 
     )
   })
 
-  expect_warning(
-    removeAuthorizedUser(
-      "alice@example.com",
-      appDir = app_dir,
-      appName = "b",
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  removeAuthorizedUser(
+    "alice@example.com",
+    appDir = app_dir,
+    appName = "b",
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   # clientForAccount built exactly once → content resolved exactly once
   expect_equal(client_build_count, 1L)
@@ -747,14 +694,11 @@ test_that("removeAuthorizedUser resolves by UUID id on PCC (not email-only fallb
     )
   })
 
-  expect_warning(
-    removeAuthorizedUser(
-      "user-uuid-abc",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  removeAuthorizedUser(
+    "user-uuid-abc",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(removed_user_id, "user-uuid-abc")
 })
@@ -796,14 +740,11 @@ test_that("removeAuthorizedUser matches by email when another record has no emai
     )
   })
 
-  expect_warning(
-    removeAuthorizedUser(
-      "alice@example.com",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  removeAuthorizedUser(
+    "alice@example.com",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(removed_user_id, "id-alice")
 })
@@ -844,14 +785,11 @@ test_that("resendInvitation resolves by UUID invite id on PCC (not email-only fa
     )
   })
 
-  expect_warning(
-    resendInvitation(
-      "invite-uuid-xyz",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  resendInvitation(
+    "invite-uuid-xyz",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_equal(resent_id, "invite-uuid-xyz")
 })
@@ -882,17 +820,14 @@ test_that("removeAuthorizedUser aborts with clear message when matched user has 
     )
   })
 
-  expect_warning(
-    expect_error(
-      removeAuthorizedUser(
-        "alice@example.com",
-        appDir = app_dir,
-        account = "myaccount",
-        server = "connect.posit.cloud"
-      ),
-      regexp = "no id"
+  expect_error(
+    removeAuthorizedUser(
+      "alice@example.com",
+      appDir = app_dir,
+      account = "myaccount",
+      server = "connect.posit.cloud"
     ),
-    regexp = "deprecated"
+    regexp = "no id"
   )
 })
 
@@ -922,17 +857,14 @@ test_that("removeAuthorizedUser hints at redaction when the user cannot be match
     )
   })
 
-  expect_warning(
-    expect_error(
-      removeAuthorizedUser(
-        "alice@example.com",
-        appDir = app_dir,
-        account = "myaccount",
-        server = "connect.posit.cloud"
-      ),
-      regexp = "redacted"
+  expect_error(
+    removeAuthorizedUser(
+      "alice@example.com",
+      appDir = app_dir,
+      account = "myaccount",
+      server = "connect.posit.cloud"
     ),
-    regexp = "deprecated"
+    regexp = "redacted"
   )
 })
 
@@ -1003,17 +935,14 @@ test_that("resendInvitation aborts with clear message when matched invitation ha
     )
   })
 
-  expect_warning(
-    expect_error(
-      resendInvitation(
-        "alice@example.com",
-        appDir = app_dir,
-        account = "myaccount",
-        server = "connect.posit.cloud"
-      ),
-      regexp = "no id"
+  expect_error(
+    resendInvitation(
+      "alice@example.com",
+      appDir = app_dir,
+      account = "myaccount",
+      server = "connect.posit.cloud"
     ),
-    regexp = "deprecated"
+    regexp = "no id"
   )
 })
 
@@ -1047,14 +976,11 @@ test_that("cleanupPasswordFile is NOT called on PCC accounts", {
     }
   )
 
-  expect_warning(
-    addAuthorizedUser(
-      "alice@example.com",
-      appDir = app_dir,
-      account = "myaccount",
-      server = "connect.posit.cloud"
-    ),
-    regexp = "deprecated"
+  addAuthorizedUser(
+    "alice@example.com",
+    appDir = app_dir,
+    account = "myaccount",
+    server = "connect.posit.cloud"
   )
   expect_false(cleanup_called)
 })
