@@ -169,6 +169,36 @@ test_that("showUsers on shinyapps.io returns only id/email/account columns (no d
   expect_equal(result$account, "alice-account")
 })
 
+test_that("showUsers names shinyapps.io (not Connect Cloud) in the malformed-record error", {
+  local_temp_config()
+  addTestServer(url = "https://shinyapps.io", name = "shinyapps.io")
+  addTestAccount("myaccount", server = "shinyapps.io")
+
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplications = function(accountId, ...) {
+        list(list(name = "myapp", id = 42L))
+      },
+      listApplicationAuthorization = function(appId) {
+        # record with neither id nor email — unexpected shape
+        list(list(user = list()))
+      }
+    )
+  })
+
+  expect_warning(
+    expect_error(
+      showUsers(
+        appName = "myapp",
+        account = "myaccount",
+        server = "shinyapps.io"
+      ),
+      regexp = "Unexpected response from shinyapps\\.io"
+    ),
+    regexp = "deprecated"
+  )
+})
+
 test_that("addAuthorizedUser emits deprecation and calls inviteApplicationUser on PCC", {
   local_temp_config()
   addTestServer(
@@ -727,6 +757,55 @@ test_that("removeAuthorizedUser resolves by UUID id on PCC (not email-only fallb
     regexp = "deprecated"
   )
   expect_equal(removed_user_id, "user-uuid-abc")
+})
+
+test_that("removeAuthorizedUser matches by email when another record has no email", {
+  # Regression: a co-listed record with a redacted (NA) email made the logical
+  # subset `users[users$email == user, ]` include a phantom NA row, so the later
+  # `is.na(user$id)` check saw length > 1 and errored. which() drops the NA.
+  local_temp_config()
+  addTestServer(
+    url = "https://connect.posit.cloud",
+    name = "connect.posit.cloud"
+  )
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  addTestDeployment(
+    app_dir,
+    appName = "myapp",
+    appId = "content-uuid-123",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+
+  removed_user_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        list(
+          list(user = list(id = "id-alice", email = "alice@example.com")),
+          # A second member whose email is redacted (absent) on PCC.
+          list(user = list(id = "id-redacted", email = NULL))
+        )
+      },
+      removeApplicationUser = function(appId, userId) {
+        removed_user_id <<- userId
+        invisible(TRUE)
+      }
+    )
+  })
+
+  expect_warning(
+    removeAuthorizedUser(
+      "alice@example.com",
+      appDir = app_dir,
+      account = "myaccount",
+      server = "connect.posit.cloud"
+    ),
+    regexp = "deprecated"
+  )
+  expect_equal(removed_user_id, "id-alice")
 })
 
 test_that("resendInvitation resolves by UUID invite id on PCC (not email-only fallback)", {

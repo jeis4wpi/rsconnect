@@ -27,9 +27,10 @@ showUsers_impl <- function(api, applicationId, isPCC = FALSE) {
     id <- as.character(x$user$id %||% NA_character_)
     email <- as.character(x$user$email %||% NA_character_)
     if (is.na(id) && is.na(email)) {
+      backend <- if (isPCC) "Posit Connect Cloud" else "shinyapps.io"
       cli::cli_abort(
         c(
-          "Unexpected response from Connect Cloud: a user record has neither an {.field id} nor an {.field email}.",
+          "Unexpected response from {backend}: a user record has neither an {.field id} nor an {.field email}.",
           i = "The response shape may have changed; contact Posit support if this persists."
         )
       )
@@ -191,9 +192,10 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 #'   PCC always sends an invitation email.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
-#'   record in \code{appDir}; the call must run from the directory that contains
-#'   the \code{rsconnect/} deployment record. \code{appName} selects among
-#'   multiple records in the same directory.
+#'   record under \code{appDir}, which defaults to the working directory. Pass
+#'   \code{appDir} to point at the project directory that contains the
+#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   the same directory.
 #' @export
 addAuthorizedUser <- function(
   email,
@@ -263,9 +265,10 @@ addAuthorizedUser <- function(
 #' @note This function works for ShinyApps and Posit Connect Cloud.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
-#'   record in \code{appDir}; the call must run from the directory that contains
-#'   the \code{rsconnect/} deployment record. \code{appName} selects among
-#'   multiple records in the same directory.
+#'   record under \code{appDir}, which defaults to the working directory. Pass
+#'   \code{appDir} to point at the project directory that contains the
+#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   the same directory.
 #' @export
 removeAuthorizedUser <- function(
   user,
@@ -303,9 +306,9 @@ removeAuthorizedUser <- function(
   # Match id first (UUID strings on PCC, numeric-as-character on shinyapps.io),
   # then fall back to email. The old is.numeric() branch missed PCC UUID ids.
   if (user %in% users$id) {
-    user <- users[users$id == user, ]
+    user <- users[which(users$id == user), ]
   } else if (user %in% users$email) {
-    user <- users[users$email == user, ]
+    user <- users[which(users$email == user), ]
   } else {
     # Only PCC redacts emails, and the hint only helps someone who searched by
     # email (an id-based lookup already avoids the problem).
@@ -358,9 +361,10 @@ removeAuthorizedUser <- function(
 #' @note This function works for ShinyApps and Posit Connect Cloud.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
-#'   record in \code{appDir}; the call must run from the directory that contains
-#'   the \code{rsconnect/} deployment record. \code{appName} selects among
-#'   multiple records in the same directory.
+#'   record under \code{appDir}, which defaults to the working directory. Pass
+#'   \code{appDir} to point at the project directory that contains the
+#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   the same directory.
 #' @export
 showUsers <- function(
   appDir = getwd(),
@@ -408,9 +412,10 @@ showUsers <- function(
 #'   the API.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
-#'   record in \code{appDir}; the call must run from the directory that contains
-#'   the \code{rsconnect/} deployment record. \code{appName} selects among
-#'   multiple records in the same directory.
+#'   record under \code{appDir}, which defaults to the working directory. Pass
+#'   \code{appDir} to point at the project directory that contains the
+#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   the same directory.
 #' @export
 showInvited <- function(
   appDir = getwd(),
@@ -456,9 +461,10 @@ showInvited <- function(
 #'   the \code{regenerate} argument has no effect.
 #'
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
-#'   record in \code{appDir}; the call must run from the directory that contains
-#'   the \code{rsconnect/} deployment record. \code{appName} selects among
-#'   multiple records in the same directory.
+#'   record under \code{appDir}, which defaults to the working directory. Pass
+#'   \code{appDir} to point at the project directory that contains the
+#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   the same directory.
 #' @export
 resendInvitation <- function(
   invite,
@@ -488,9 +494,9 @@ resendInvitation <- function(
   # Match id first (UUID strings on PCC, numeric-as-character on shinyapps.io),
   # then fall back to email. The old is.numeric() branch missed PCC UUID ids.
   if (invite %in% invited$id) {
-    invite <- invited[invited$id == invite, ]
+    invite <- invited[which(invited$id == invite), ]
   } else if (invite %in% invited$email) {
-    invite <- invited[invited$email == invite, ]
+    invite <- invited[which(invited$email == invite), ]
   } else {
     stop("Invitation for \"", invite, "\" not found", call. = FALSE)
   }

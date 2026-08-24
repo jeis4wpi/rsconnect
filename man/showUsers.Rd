@@ -37,9 +37,10 @@ Supported servers: ShinyApps, Posit Connect Cloud
 This function works for ShinyApps and Posit Connect Cloud.
 
 On Posit Connect Cloud, the content is resolved from the local deployment
-record in \code{appDir}; the call must run from the directory that contains
-the \code{rsconnect/} deployment record. \code{appName} selects among
-multiple records in the same directory.
+record under \code{appDir}, which defaults to the working directory. Pass
+\code{appDir} to point at the project directory that contains the
+\code{rsconnect/} record. \code{appName} selects among multiple records in
+the same directory.
 }
 \seealso{
 \code{\link[=addAuthorizedUser]{addAuthorizedUser()}} and \code{\link[=showInvited]{showInvited()}}
