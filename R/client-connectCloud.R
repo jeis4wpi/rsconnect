@@ -153,7 +153,7 @@ connectCloudClient <- function(service, authInfo) {
       offset <- offset + length(response$data)
       total <- as.numeric(response$total)
       if (
-        length(response$data) == 0 ||
+        length(response$data) == 0L ||
           isTRUE(offset >= total) ||
           (length(total) == 0L && length(response$data) < pageSize)
       ) {
