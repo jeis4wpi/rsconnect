@@ -135,7 +135,7 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
         "Can't identify the Posit Connect Cloud content for {.file {appDir}}.",
         i = paste0(
           "No deployment record found. Deploy the content first, or run from ",
-          "the project directory that contains its {.path rsconnect/} record."
+          "the project directory that contains its {.path rsconnect/} deployment record."
         )
       ))
     }
@@ -149,6 +149,9 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
   }
 }
 
+#' Add authorized user to application
+#'
+#' @description
 #' Add authorized user to application
 #'
 #' Supported servers: ShinyApps, Posit Connect Cloud
@@ -172,7 +175,7 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
-#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 #'   the same directory.
 #' @export
 addAuthorizedUser <- function(
@@ -222,6 +225,9 @@ addAuthorizedUser <- function(
 
 #' Remove authorized user from an application
 #'
+#' @description
+#' Remove authorized user from an application
+#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param user The user to remove. Can be id or email address.
@@ -235,7 +241,7 @@ addAuthorizedUser <- function(
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
-#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 #'   the same directory.
 #' @export
 removeAuthorizedUser <- function(
@@ -302,6 +308,9 @@ removeAuthorizedUser <- function(
 
 #' List authorized users for an application
 #'
+#' @description
+#' List authorized users for an application
+#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param appDir Directory containing application. Defaults to
@@ -320,7 +329,7 @@ removeAuthorizedUser <- function(
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
-#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 #'   the same directory.
 #' @export
 showUsers <- function(
@@ -346,6 +355,9 @@ showUsers <- function(
 
 #' List invited users for an application
 #'
+#' @description
+#' List invited users for an application
+#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param appDir Directory containing application. Defaults to
@@ -361,7 +373,7 @@ showUsers <- function(
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
-#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 #'   the same directory.
 #' @export
 showInvited <- function(
@@ -383,6 +395,9 @@ showInvited <- function(
 
 #' Resend invitation for invited users of an application
 #'
+#' @description
+#' Resend invitation for invited users of an application
+#'
 #' Supported servers: ShinyApps, Posit Connect Cloud
 #'
 #' @param invite The invitation to resend. Can be id or email address.
@@ -400,7 +415,7 @@ showInvited <- function(
 #'   On Posit Connect Cloud, the content is resolved from the local deployment
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
-#'   \code{rsconnect/} record. \code{appName} selects among multiple records in
+#'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 #'   the same directory.
 #' @export
 resendInvitation <- function(

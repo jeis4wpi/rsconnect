@@ -36,6 +36,8 @@ custom message to send in email invitation. Defaults to NULL, which
 will use default invitation message.}
 }
 \description{
+Add authorized user to application
+
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
@@ -47,7 +49,7 @@ PCC always sends an invitation email.
 On Posit Connect Cloud, the content is resolved from the local deployment
 record under \code{appDir}, which defaults to the working directory. Pass
 \code{appDir} to point at the project directory that contains the
-\code{rsconnect/} record. \code{appName} selects among multiple records in
+\code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 the same directory.
 }
 \seealso{

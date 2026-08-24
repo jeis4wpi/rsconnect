@@ -27,6 +27,8 @@ Cloud. On Posit Connect Cloud the data frame additionally includes
 \code{"collaborator"}) from the API response.
 }
 \description{
+List authorized users for an application
+
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
@@ -35,7 +37,7 @@ This function works for ShinyApps and Posit Connect Cloud.
 On Posit Connect Cloud, the content is resolved from the local deployment
 record under \code{appDir}, which defaults to the working directory. Pass
 \code{appDir} to point at the project directory that contains the
-\code{rsconnect/} record. \code{appName} selects among multiple records in
+\code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 the same directory.
 }
 \seealso{

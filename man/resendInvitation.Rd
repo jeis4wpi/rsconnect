@@ -31,6 +31,8 @@ there are multiple options, you'll be prompted to pick one.
 Use \code{\link[=accounts]{accounts()}} to see the full list of available options.}
 }
 \description{
+Resend invitation for invited users of an application
+
 Supported servers: ShinyApps, Posit Connect Cloud
 }
 \note{
@@ -41,7 +43,7 @@ the \code{regenerate} argument has no effect.
 On Posit Connect Cloud, the content is resolved from the local deployment
 record under \code{appDir}, which defaults to the working directory. Pass
 \code{appDir} to point at the project directory that contains the
-\code{rsconnect/} record. \code{appName} selects among multiple records in
+\code{rsconnect/} deployment record. \code{appName} selects among multiple records in
 the same directory.
 }
 \seealso{
