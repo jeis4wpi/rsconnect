@@ -1,3 +1,5 @@
+# rsconnect (development version)
+
 # rsconnect 1.11.0
 
 * rsconnect checks whether a newer version of itself is available from your
