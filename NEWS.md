@@ -17,6 +17,8 @@
 * `applications()` now supports Posit Connect Cloud accounts, returning a
   data frame with the same columns as for ShinyApps and Posit Connect accounts.
 
+# rsconnect 1.11.0
+
 * rsconnect checks whether a newer version of itself is available from your
   configured repositories, and lets you know: as a startup message when the
   package is attached interactively, and as a note appended to deployment errors

@@ -1,7 +1,7 @@
 ## Summary
 
-Patch release including changes to address CRAN test failures associated with
-the UTF-8 DCF change in R-devel.
+Minor release including functions to help migrations from shinyapps.io to
+Posit Connect Cloud.
 
 ## R CMD check results
 

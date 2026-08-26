@@ -61,14 +61,18 @@ export(updateAccountEnvVars)
 export(writeManifest)
 import(rlang)
 importFrom(lifecycle,deprecated)
-importFrom(stats,na.omit)
-importFrom(stats,setNames)
-importFrom(utils,available.packages)
-importFrom(utils,contrib.url)
-importFrom(utils,getFromNamespace)
-importFrom(utils,glob2rx)
-importFrom(utils,head)
-importFrom(utils,installed.packages)
-importFrom(utils,packageDescription)
-importFrom(utils,packageVersion)
-importFrom(utils,read.csv)
+importFrom(stats,
+  na.omit,
+  setNames
+)
+importFrom(utils,
+  available.packages,
+  contrib.url,
+  getFromNamespace,
+  glob2rx,
+  head,
+  installed.packages,
+  packageDescription,
+  packageVersion,
+  read.csv
+)
