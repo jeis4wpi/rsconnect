@@ -12,17 +12,14 @@
   `showInvited()`, and `resendInvitation()` now work with Posit Connect Cloud
   accounts in addition to ShinyApps. On Posit Connect Cloud, the `sendEmail`
   argument to `addAuthorizedUser()` is ignored because PCC always emails
-  invitees; a warning is emitted when it is explicitly set to `FALSE`.
+  invitees; a warning is emitted when it is explicitly set to `FALSE`. On Posit
+  Connect Cloud these functions also accept a `contentId` argument that targets
+  the content directly (the id is shown in the content URL and returned by
+  `applications()`), so a local deployment record is not required; `contentId`
+  is not supported on shinyapps.io.
 
 * `applications()` now supports Posit Connect Cloud accounts, returning a
   data frame with the same columns as for ShinyApps and Posit Connect accounts.
-
-* `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
-  `showInvited()`, and `resendInvitation()` gain a `contentId` argument. On
-  Posit Connect Cloud, passing `contentId` targets the content directly, so a
-  local deployment record is no longer required; the id is shown in the content
-  URL and returned by `applications()`. `contentId` is not supported on
-  shinyapps.io.
 
 # rsconnect 1.11.0
 

@@ -124,7 +124,12 @@ cleanupPasswordFile <- function(appDir) {
 # by title (mutable, non-unique on PCC).
 # On shinyapps.io, delegates to resolveApplication() unchanged; contentId is
 # not supported there.
-resolveContentTarget <- function(accountDetails, appDir, appName, contentId = NULL) {
+resolveContentTarget <- function(
+  accountDetails,
+  appDir,
+  appName,
+  contentId = NULL
+) {
   if (isPositConnectCloudServer(accountDetails$server)) {
     # An explicit content id targets PCC content directly, with no local
     # deployment record required.
@@ -213,7 +218,12 @@ addAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
+  application <- resolveContentTarget(
+    accountDetails,
+    appDir,
+    appName,
+    contentId
+  )
 
   # check for and remove password file (shinyapps.io only; PCC has no password file)
   if (!isPositConnectCloudServer(accountDetails$server)) {
@@ -284,7 +294,12 @@ removeAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
+  application <- resolveContentTarget(
+    accountDetails,
+    appDir,
+    appName,
+    contentId
+  )
 
   # check and remove password file (shinyapps.io only; PCC has no password file)
   if (!isPositConnectCloudServer(accountDetails$server)) {
@@ -382,7 +397,12 @@ showUsers <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
+  application <- resolveContentTarget(
+    accountDetails,
+    appDir,
+    appName,
+    contentId
+  )
 
   api <- clientForAccount(accountDetails)
   showUsers_impl(
@@ -433,7 +453,12 @@ showInvited <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
+  application <- resolveContentTarget(
+    accountDetails,
+    appDir,
+    appName,
+    contentId
+  )
 
   api <- clientForAccount(accountDetails)
   showInvited_impl(api, application$id)
@@ -486,7 +511,12 @@ resendInvitation <- function(
 
   # resolve content exactly once, then fetch invitations via impl (avoids a
   # second resolveContentTarget() call).
-  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
+  application <- resolveContentTarget(
+    accountDetails,
+    appDir,
+    appName,
+    contentId
+  )
   api <- clientForAccount(accountDetails)
   invited <- showInvited_impl(api, application$id)
 
