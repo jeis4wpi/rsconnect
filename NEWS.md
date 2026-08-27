@@ -17,6 +17,13 @@
 * `applications()` now supports Posit Connect Cloud accounts, returning a
   data frame with the same columns as for ShinyApps and Posit Connect accounts.
 
+* `addAuthorizedUser()`, `removeAuthorizedUser()`, `showUsers()`,
+  `showInvited()`, and `resendInvitation()` gain a `contentId` argument. On
+  Posit Connect Cloud, passing `contentId` targets the content directly, so a
+  local deployment record is no longer required; the id is shown in the content
+  URL and returned by `applications()`. `contentId` is not supported on
+  shinyapps.io.
+
 # rsconnect 1.11.0
 
 * rsconnect checks whether a newer version of itself is available from your

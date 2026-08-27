@@ -475,6 +475,51 @@ test_that("resolveContentTarget uses deployment-record appId on PCC, not title",
   expect_equal(captured_app_id, "content-uuid-abc")
 })
 
+test_that("contentId targets PCC content directly without a deployment record", {
+  local_temp_config()
+  addTestServer(
+    url = "https://connect.posit.cloud",
+    name = "connect.posit.cloud"
+  )
+  addTestAccount("myaccount", server = "connect.posit.cloud")
+
+  app_dir <- withr::local_tempdir()
+  # No addTestDeployment — contentId must not require a local record.
+
+  captured_app_id <- NULL
+  local_mocked_bindings(clientForAccount = function(...) {
+    list(
+      listApplicationAuthorization = function(appId) {
+        captured_app_id <<- appId
+        list()
+      }
+    )
+  })
+
+  showUsers(
+    appDir = app_dir,
+    contentId = "content-uuid-direct",
+    account = "myaccount",
+    server = "connect.posit.cloud"
+  )
+  expect_equal(captured_app_id, "content-uuid-direct")
+})
+
+test_that("contentId is rejected on shinyapps.io", {
+  local_temp_config()
+  addTestServer(url = "https://shinyapps.io", name = "shinyapps.io")
+  addTestAccount("myaccount", server = "shinyapps.io")
+
+  expect_error(
+    showUsers(
+      contentId = "content-uuid-direct",
+      account = "myaccount",
+      server = "shinyapps.io"
+    ),
+    regexp = "only supported on Posit Connect Cloud"
+  )
+})
+
 test_that("resolveContentTarget aborts with clear message on PCC when no deployment record", {
   local_temp_config()
   addTestServer(

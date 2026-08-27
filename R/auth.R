@@ -119,11 +119,19 @@ cleanupPasswordFile <- function(appDir) {
 }
 
 # Internal: resolve the target content for collaborator management functions.
-# On PCC, reads the local deployment record to get the content id (appId)
-# rather than matching by title (mutable, non-unique on PCC).
-# On shinyapps.io, delegates to resolveApplication() unchanged.
-resolveContentTarget <- function(accountDetails, appDir, appName) {
+# On PCC, an explicit contentId targets the content directly; otherwise reads
+# the local deployment record to get the content id (appId) rather than matching
+# by title (mutable, non-unique on PCC).
+# On shinyapps.io, delegates to resolveApplication() unchanged; contentId is
+# not supported there.
+resolveContentTarget <- function(accountDetails, appDir, appName, contentId = NULL) {
   if (isPositConnectCloudServer(accountDetails$server)) {
+    # An explicit content id targets PCC content directly, with no local
+    # deployment record required.
+    if (!is.null(contentId)) {
+      check_string(contentId)
+      return(list(id = contentId))
+    }
     recs <- deployments(
       appPath = appDir,
       accountFilter = accountDetails$name,
@@ -145,6 +153,12 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
     }
     list(id = recs$appId[[1L]])
   } else {
+    if (!is.null(contentId)) {
+      cli::cli_abort(c(
+        "{.arg contentId} is only supported on Posit Connect Cloud.",
+        i = "On shinyapps.io, identify the application with {.arg appName}."
+      ))
+    }
     resolveApplication(accountDetails, appName %||% basename(appDir))
   }
 }
@@ -160,6 +174,11 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
+#' @param contentId On Posit Connect Cloud, the content ID to manage, taken from
+#'   the content URL
+#'   (\code{https://connect.posit.cloud/{account}/content/{contentId}}). When
+#'   supplied, \code{appDir} and \code{appName} are ignored and no local
+#'   deployment record is required. Not supported on shinyapps.io.
 #' @inheritParams deployApp
 #' @param sendEmail Send an email letting the user know the application
 #'   has been shared with them.
@@ -176,12 +195,14 @@ resolveContentTarget <- function(accountDetails, appDir, appName) {
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
 #'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
-#'   the same directory.
+#'   the same directory. Alternatively, pass \code{contentId} to target the
+#'   content directly, without a local deployment record.
 #' @export
 addAuthorizedUser <- function(
   email,
   appDir = getwd(),
   appName = NULL,
+  contentId = NULL,
   account = NULL,
   server = NULL,
   sendEmail = NULL,
@@ -192,7 +213,7 @@ addAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
 
   # check for and remove password file (shinyapps.io only; PCC has no password file)
   if (!isPositConnectCloudServer(accountDetails$server)) {
@@ -234,6 +255,11 @@ addAuthorizedUser <- function(
 #' @param appDir Directory containing application. Defaults to
 #' current working directory.
 #' @param appName Name of application.
+#' @param contentId On Posit Connect Cloud, the content ID to manage, taken from
+#'   the content URL
+#'   (\code{https://connect.posit.cloud/{account}/content/{contentId}}). When
+#'   supplied, \code{appDir} and \code{appName} are ignored and no local
+#'   deployment record is required. Not supported on shinyapps.io.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showUsers()]
 #' @note This function works for ShinyApps and Posit Connect Cloud.
@@ -242,12 +268,14 @@ addAuthorizedUser <- function(
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
 #'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
-#'   the same directory.
+#'   the same directory. Alternatively, pass \code{contentId} to target the
+#'   content directly, without a local deployment record.
 #' @export
 removeAuthorizedUser <- function(
   user,
   appDir = getwd(),
   appName = NULL,
+  contentId = NULL,
   account = NULL,
   server = NULL
 ) {
@@ -256,7 +284,7 @@ removeAuthorizedUser <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
 
   # check and remove password file (shinyapps.io only; PCC has no password file)
   if (!isPositConnectCloudServer(accountDetails$server)) {
@@ -320,6 +348,11 @@ removeAuthorizedUser <- function(
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
+#' @param contentId On Posit Connect Cloud, the content ID to manage, taken from
+#'   the content URL
+#'   (\code{https://connect.posit.cloud/{account}/content/{contentId}}). When
+#'   supplied, \code{appDir} and \code{appName} are ignored and no local
+#'   deployment record is required. Not supported on shinyapps.io.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showInvited()]
 #' @return A data frame with one row per authorized user. Columns always
@@ -334,11 +367,13 @@ removeAuthorizedUser <- function(
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
 #'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
-#'   the same directory.
+#'   the same directory. Alternatively, pass \code{contentId} to target the
+#'   content directly, without a local deployment record.
 #' @export
 showUsers <- function(
   appDir = getwd(),
   appName = NULL,
+  contentId = NULL,
   account = NULL,
   server = NULL
 ) {
@@ -347,7 +382,7 @@ showUsers <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
 
   api <- clientForAccount(accountDetails)
   showUsers_impl(
@@ -367,6 +402,11 @@ showUsers <- function(
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
+#' @param contentId On Posit Connect Cloud, the content ID to manage, taken from
+#'   the content URL
+#'   (\code{https://connect.posit.cloud/{account}/content/{contentId}}). When
+#'   supplied, \code{appDir} and \code{appName} are ignored and no local
+#'   deployment record is required. Not supported on shinyapps.io.
 #' @inheritParams deployApp
 #' @seealso [addAuthorizedUser()] and [showUsers()]
 #' @note This function works for ShinyApps and Posit Connect Cloud. On Posit
@@ -378,11 +418,13 @@ showUsers <- function(
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
 #'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
-#'   the same directory.
+#'   the same directory. Alternatively, pass \code{contentId} to target the
+#'   content directly, without a local deployment record.
 #' @export
 showInvited <- function(
   appDir = getwd(),
   appName = NULL,
+  contentId = NULL,
   account = NULL,
   server = NULL
 ) {
@@ -391,7 +433,7 @@ showInvited <- function(
     checkShinyappsServer(accountDetails$server)
   }
 
-  application <- resolveContentTarget(accountDetails, appDir, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
 
   api <- clientForAccount(accountDetails)
   showInvited_impl(api, application$id)
@@ -410,6 +452,11 @@ showInvited <- function(
 #' @param appDir Directory containing application. Defaults to
 #'   current working directory.
 #' @param appName Name of application.
+#' @param contentId On Posit Connect Cloud, the content ID to manage, taken from
+#'   the content URL
+#'   (\code{https://connect.posit.cloud/{account}/content/{contentId}}). When
+#'   supplied, \code{appDir} and \code{appName} are ignored and no local
+#'   deployment record is required. Not supported on shinyapps.io.
 #' @inheritParams deployApp
 #' @seealso [showInvited()]
 #' @note This function works for ShinyApps and Posit Connect Cloud. The
@@ -420,13 +467,15 @@ showInvited <- function(
 #'   record under \code{appDir}, which defaults to the working directory. Pass
 #'   \code{appDir} to point at the project directory that contains the
 #'   \code{rsconnect/} deployment record. \code{appName} selects among multiple records in
-#'   the same directory.
+#'   the same directory. Alternatively, pass \code{contentId} to target the
+#'   content directly, without a local deployment record.
 #' @export
 resendInvitation <- function(
   invite,
   regenerate = FALSE,
   appDir = getwd(),
   appName = NULL,
+  contentId = NULL,
   account = NULL,
   server = NULL
 ) {
@@ -437,7 +486,7 @@ resendInvitation <- function(
 
   # resolve content exactly once, then fetch invitations via impl (avoids a
   # second resolveContentTarget() call).
-  application <- resolveContentTarget(accountDetails, appDir, appName)
+  application <- resolveContentTarget(accountDetails, appDir, appName, contentId)
   api <- clientForAccount(accountDetails)
   invited <- showInvited_impl(api, application$id)
 
