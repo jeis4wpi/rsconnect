@@ -268,7 +268,11 @@ removeAuthorizedUser <- function(
   # return a different record, causing removeApplicationUser to act on the
   # wrong content).
   api <- clientForAccount(accountDetails)
-  users <- showUsers_impl(api, application$id)
+  users <- showUsers_impl(
+    api,
+    application$id,
+    isPCC = isPositConnectCloudServer(accountDetails$server)
+  )
 
   user <- as.character(user)
   # Match id first (UUID strings on PCC, numeric-as-character on shinyapps.io),
